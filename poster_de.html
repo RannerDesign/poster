@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="icon" type="image/png" href="poster.png">
+<script src="poster.js"></script>
+<title>Poster Generator</title>
+<style type='text/css'>
+	body {font-family: sans-serif;}
+	h2 {text-align: center;}
+	h4 {margin: 45px 0 15px;}
+	.msgerr {color: #700;}
+	.flexblocks {margin: 15px 0; display: flex; justify-content: left; align-items: center; gap: 15px;}
+	button {
+		width: 120px; height: 70px; border: 1px solid #00007f; border-radius: 7px; font-size: 20px; font-weight: bold; color: #1f1f1f; background-color: #f1f1f1;}
+	button:hover {color: #f1f1f1; background-color: #1f1f1f;}
+	button:disabled {color: #bfbfbf; border: none;}
+	.helpbutton {
+		text-decoration: none; width: 120px; height: 70px; border: 1px solid #00007f; border-radius: 7px; font-size: 20px; text-align: center; line-height: 70px; font-weight: bold; color: #1f1f1f; background-color: #f1f1f1;}
+	.helpbutton:hover {color: #f1f1f1; background-color: #1f1f1f;}
+	.counter {width: 25px; height: 25px; text-align: right;}
+	.waiticon {width: 10px; height: 10px; border-radius: 20px;}
+	#uploadfilearea {
+		position: relative; display: inline-block; width: 300px; height: 60px; padding: 10px; text-align: center; vertical-align: middle; line-height: 26px;border: 1px dashed #00007f; border-radius: 7px;}
+	#messagearea {margin-top: 25px; background-color: #ddd; font-size: 12px; line-height: 12px; padding 3px 0;}
+	#messagearea div:before {
+		position: relative; top: 3px; content: '\2022'; font-size: 20px; margin-right: 3px; color: #0000a8;}
+	#inputlist {display: none; margin-top: 25px;}
+	#inputlist li {height: 18px; line-height: 18px; font-size: 12px;}
+	#inputlist li::marker {color: #007; font-size: 24px;}
+	#filelist {display: none; margin-top: 25px;}
+	.droparea {}
+	.droparea label {color: #00007f; background-color: #f1f1f1; font-size: 14px; padding: 3px}
+	.grid2 {
+		display: grid; grid-gap: 5px; margin: 25px 5px; grid-template-columns: max-content max-content; justify-items: left; align-items: center;}
+	.grid2 > label, .grid2 > div { text-align: left; padding-left: 3px;}
+	.grid2 input {
+		padding: 2px; font-size: 14px;  border: 1px dotted #444; border-radius: 5px; width: 100px; height: 25px; text-align: right;}
+	.grid2 input[type="color"] {width: 106px; height: 31px;}
+	.grid2 input[type="radio"] {width: 15px; height: 15px; justify-self: end;}
+	.grid2 select {padding: 2px; font-size: 14px;  border: 1px dotted #444; border-radius: 5px; width: 106px; height: 31px;}
+	#version {text-align: right; font-size: 10px; border-bottom: 1px solid #777;}
+	.filearea {}
+	.fileblock {position: relative; display: grid;
+		grid-template-columns: 200px 400px 60px;
+		grid-template-rows: 30px 30px 30px 30px;
+		grid-template-areas: 
+		"thumb filename fileremove"
+		"thumb fileTS fileremove"
+		"thumb filesize fileremove"
+		"thumb filepixel fileremove";
+		width: 600px; height: 120px; margin: 5px 0; background-color: #efefef}
+	.fileimg {grid-area: thumb; max-height: 110px; padding: 5px;}
+	.filename {grid-area: filename; padding-top: 10px; font-size: 16px; color: #1f1f7f;}
+	.fileTS {grid-area: fileTS; padding-top: 15px; font-size: 12px; color: #3f1f1f;}
+	.filesize {grid-area: filesize; padding-top: 10px; font-size: 12px; color: #1f3f1f;}
+	.filepixel {grid-area: filepixel; padding-top: 5px; font-size: 12px; color: #1f3f1f;}
+	.fileremove {grid-area: fileremove; justify-self: center; align-self: center;}
+	.fileremove > img {width: 40px; height: 40px;}
+</style>
+</head
+<body>
+<div>
+	<h2>Poster Generator</h2>
+	<h4>1. Bilder auswählen</h4>
+	<div class="flexblocks">
+		<div id="uploadfilearea">
+			<div class="droparea">
+				<label for="imgfile">Fotos hierhin ziehen<br>oder klicken zum Dateiauswahldialog</label>
+				<input type="file" id='imgfile' multiple style="display: none;">
+			</div>
+		</div>
+		<div id="inputcount" class="counter"></div>
+		<button type='button' onclick='clearInput();'>Auswahl löschen</button>
+		<a href="poster_help_de.html" target="_blank" class="helpbutton">Hilfe</a>
+	</div>
+	<h4>2. Bilder laden</h4>
+	<div class="flexblocks">
+		<button type='button' onclick='loadImage();'>Bilder laden</button>
+		<div id="waiticon" class="waiticon"></div>
+		<div id="waitcount" class="counter"></div>
+		<button type='button' onclick='clearData();'>Bilder löschen</button>
+	</div>
+	<h4>3. Poster-Typ festlegen</h4>
+	<div class="flexblocks">
+		<button id="pt1" type='button' onclick='setPosterType(1);'>Raster</button>
+		<button id="pt2" type='button' onclick='setPosterType(2);'>Streifen horizontal</button>
+		<button id="pt3" type='button' onclick='setPosterType(3);'>Streifen vertikal</button>
+	</div>
+	<h4>4. Ausgabeformat festlegen</h4>
+	<div class="flexblocks">
+		<button id="ot1" type='button' onclick='setOutputType(1);'>Canvas</button>
+		<button id="ot2" type='button' onclick='setOutputType(2);'>HTML</button>
+	</div>
+	<h4>5. Poster Parameter</h4>
+	<div id="pp1">
+		<div class="grid2">
+			<input type="text" id="colcount1" />
+			<label>Anzahl Spalten</label>
+			<input type="text" id="rowcount1" />
+			<label>Anzahl Zeilen</label>
+			<input type="text" id="singleWidth1" />
+			<label>Einzelbild Breite</label>
+			<input type="text" id="singleHeight1" />
+			<label>Einzelbild Höhe</label>
+			<input type="text" id="aspect1" />
+			<label>Seitenverhältnis (B:H)</label>
+			<div></div>
+			<label>Zuschnitt:</label>
+			<input name="fit1" type="radio" value="contain" id="fit11">
+			<label for="fit11">Originalverhältnis (ggf. mit Rand)</label>
+			<input name="fit1" type="radio" value="fill" id="fit12">
+			<label for="fit12">Ausfüllen (ggf. mit Verzerrung)</label>
+			<input name="fit1" type="radio" value="cover" id="fit13">
+			<label for="fit13">Ausschnitt (mittenzentriert)</label>
+		</div>
+	</div>
+	<div id="pp2">
+		<div class="grid2">
+			<input type="text" id="targetWidth2" />
+			<label>Vorgegebene Poster-Breite</label>
+			<input type="text" id="targetHeight2" />
+			<label>Gewünschte Poster-Höhe (ca.)</label>
+			<input type="text" id="rowcount2" />
+			<label>Anzahl horizontaler Streifen</label>
+		</div>
+	</div>
+	<div id="pp3">
+		<div class="grid2">
+			<input type="text" id="targetHeight3" />
+			<label>Vorgegebene Poster-Höhe</label>
+			<input type="text" id="targetWidth3" />
+			<label>Gewünschte Poster-Breite (ca.)</label>
+			<input type="text" id="colcount3" />
+			<label>Anzahl vertikaler Streifen</label>
+		</div>
+	</div>
+	<div id="pp0">
+		<div class="grid2">
+			<input type="text" id="margins" />
+			<label>Posterränder (o, r, u, l)</label>
+			<input type="text" id="gaps" />
+			<label>Bildzwischenraum (hor., vert.)</label>
+			<input type="color" id="bgcol" />
+			<label>Hintergrundfarbe</label>
+			<div></div>
+			<label>Einzelbild:</label>
+			<input type="text" id="borderwidth" />
+			<label>Rahmenstärke</label>
+			<input type="text" id="borderdash" class="modeCanvas" />
+			<label class="modeCanvas">Rahmenmuster</label>
+			<select name="borderstyle" id="borderstyle" class="modeHTML">
+				<option value="" id="borderstyle1">kein Rahmen</option>
+				<option value="solid" id="borderstyle2">Linie</option>
+				<option value="dotted" id="borderstyle3">Punkte</option>
+				<option value="dashed" id="borderstyle4">gestrichelt</option>
+				<option value="double" id="borderstyle5">Doppellinie</option>
+				<option value="groove" id="borderstyle6">Rille</option>
+				<option value="ridge" id="borderstyle7">Steg</option>
+				<option value="inset" id="borderstyle8">eingebettet</option>
+				<option value="outset" id="borderstyle9">aufgesetzt</option>
+			</select>
+			<label class="modeHTML">Rahmenstil</label>
+			<input type="color" id="bordercolor" />
+			<label>Rahmenfarbe</label>
+			<input type="text" id="corner" />
+			<label>Eckenrundung</label>
+			<input type="text" id="postername" />
+			<label>Postername</label>
+			<input type="text" id="quality" />
+			<label>Ausgabequalität (jpeg)</label>
+		</div>
+	</div>
+	<h4>6. Poster erstellen</h4>
+	<div class="flexblocks">
+		<button id="pw2" type='button' onclick='makePoster();'>Poster anzeigen</button>
+		<div id="waitcanvas" class="waiticon"></div>
+		<button id="pw3" type='button' onclick='posterOut();'>Poster speichern</button>
+	</div>
+	<div id="version"></div>
+	<div id="messagearea"></div>
+	<div id="inputlist"></div>
+	<div id="filelist"></div>
+</div>
+
+</body>

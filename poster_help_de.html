@@ -1,0 +1,623 @@
+<!doctype html>
+<html>
+<head>
+<meta charset='UTF-8'><meta name='viewport' content='width=device-width initial-scale=1'>
+
+<link href='https://fonts.googleapis.com/css?family=Open+Sans:400italic,700italic,700,400&subset=latin,latin-ext' rel='stylesheet' type='text/css' /><style type='text/css'>html {overflow-x: initial !important;}:root { --bg-color: #ffffff; --text-color: #333333; --select-text-bg-color: #B5D6FC; --select-text-font-color: auto; --monospace: "Lucida Console",Consolas,"Courier",monospace; --title-bar-height: 20px; }
+.mac-os-11 { --title-bar-height: 28px; }
+html { font-size: 14px; background-color: var(--bg-color); color: var(--text-color); font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+h1, h2, h3, h4, h5 { white-space: pre-wrap; }
+body { margin: 0px; padding: 0px; height: auto; inset: 0px; font-size: 1rem; line-height: 1.42857; overflow-x: hidden; background: inherit; }
+iframe { margin: auto; }
+a.url { word-break: break-all; }
+a:active, a:hover { outline: 0px; }
+.in-text-selection, ::selection { text-shadow: none; background: var(--select-text-bg-color); color: var(--select-text-font-color); }
+#write { margin: 0px auto; height: auto; width: inherit; word-break: normal; overflow-wrap: break-word; position: relative; white-space: normal; overflow-x: visible; padding-top: 36px; }
+#write.first-line-indent p { text-indent: 2em; }
+#write.first-line-indent li p, #write.first-line-indent p * { text-indent: 0px; }
+#write.first-line-indent li { margin-left: 2em; }
+.for-image #write { padding-left: 8px; padding-right: 8px; }
+body.typora-export { padding-left: 30px; padding-right: 30px; }
+.typora-export .footnote-line, .typora-export li, .typora-export p { white-space: pre-wrap; }
+.typora-export .task-list-item input { pointer-events: none; }
+@media screen and (max-width: 500px) {
+  body.typora-export { padding-left: 0px; padding-right: 0px; }
+  #write { padding-left: 20px; padding-right: 20px; }
+}
+#write li > figure:last-child { margin-bottom: 0.5rem; }
+#write ol, #write ul { position: relative; }
+img { max-width: 100%; vertical-align: middle; image-orientation: from-image; }
+button, input, select, textarea { color: inherit; font: inherit; }
+input[type="checkbox"], input[type="radio"] { line-height: normal; padding: 0px; }
+*, ::after, ::before { box-sizing: border-box; }
+#write h1, #write h2, #write h3, #write h4, #write h5, #write h6, #write p, #write pre { width: inherit; }
+#write h1, #write h2, #write h3, #write h4, #write h5, #write h6, #write p { position: relative; }
+p { line-height: inherit; }
+h1, h2, h3, h4, h5, h6 { break-after: avoid-page; break-inside: avoid; orphans: 4; }
+p { orphans: 4; }
+h1 { font-size: 2rem; }
+h2 { font-size: 1.8rem; }
+h3 { font-size: 1.6rem; }
+h4 { font-size: 1.4rem; }
+h5 { font-size: 1.2rem; }
+h6 { font-size: 1rem; }
+.md-math-block, .md-rawblock, h1, h2, h3, h4, h5, h6, p { margin-top: 1rem; margin-bottom: 1rem; }
+.hidden { display: none; }
+.md-blockmeta { color: rgb(204, 204, 204); font-weight: 700; font-style: italic; }
+a { cursor: pointer; }
+sup.md-footnote { padding: 2px 4px; background-color: rgba(238, 238, 238, 0.7); color: rgb(85, 85, 85); border-radius: 4px; cursor: pointer; }
+sup.md-footnote a, sup.md-footnote a:hover { color: inherit; text-transform: inherit; text-decoration: inherit; }
+#write input[type="checkbox"] { cursor: pointer; width: inherit; height: inherit; }
+figure { overflow-x: auto; margin: 1.2em 0px; max-width: calc(100% + 16px); padding: 0px; }
+figure > table { margin: 0px; }
+thead, tr { break-inside: avoid; break-after: auto; }
+thead { display: table-header-group; }
+table { border-collapse: collapse; border-spacing: 0px; width: 100%; overflow: auto; break-inside: auto; text-align: left; }
+table.md-table td { min-width: 32px; }
+.CodeMirror-gutters { border-right: 0px; background-color: inherit; }
+.CodeMirror-linenumber { user-select: none; }
+.CodeMirror { text-align: left; }
+.CodeMirror-placeholder { opacity: 0.3; }
+.CodeMirror pre { padding: 0px 4px; }
+.CodeMirror-lines { padding: 0px; }
+div.hr:focus { cursor: none; }
+#write pre { white-space: pre-wrap; }
+#write.fences-no-line-wrapping pre { white-space: pre; }
+#write pre.ty-contain-cm { white-space: normal; }
+.CodeMirror-gutters { margin-right: 4px; }
+.md-fences { font-size: 0.9rem; display: block; break-inside: avoid; text-align: left; overflow: visible; white-space: pre; background: inherit; position: relative !important; }
+.md-fences-adv-panel { width: 100%; margin-top: 10px; text-align: center; padding-top: 0px; padding-bottom: 8px; overflow-x: auto; }
+#write .md-fences.mock-cm { white-space: pre-wrap; }
+.md-fences.md-fences-with-lineno { padding-left: 0px; }
+#write.fences-no-line-wrapping .md-fences.mock-cm { white-space: pre; overflow-x: auto; }
+.md-fences.mock-cm.md-fences-with-lineno { padding-left: 8px; }
+.CodeMirror-line, twitterwidget { break-inside: avoid; }
+svg { break-inside: avoid; }
+.footnotes { opacity: 0.8; font-size: 0.9rem; margin-top: 1em; margin-bottom: 1em; }
+.footnotes + .footnotes { margin-top: 0px; }
+.md-reset { margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: top; background: 0px 0px; text-decoration: none; text-shadow: none; float: none; position: static; width: auto; height: auto; white-space: nowrap; cursor: inherit; -webkit-tap-highlight-color: transparent; line-height: normal; font-weight: 400; text-align: left; box-sizing: content-box; direction: ltr; }
+li div { padding-top: 0px; }
+blockquote { margin: 1rem 0px; }
+li .mathjax-block, li p { margin: 0.5rem 0px; }
+li blockquote { margin: 1rem 0px; }
+li { margin: 0px; position: relative; }
+blockquote > :last-child { margin-bottom: 0px; }
+blockquote > :first-child, li > :first-child { margin-top: 0px; }
+.footnotes-area { color: rgb(136, 136, 136); margin-top: 0.714rem; padding-bottom: 0.143rem; white-space: normal; }
+#write .footnote-line { white-space: pre-wrap; }
+@media print {
+  body, html { border: 1px solid transparent; height: 99%; break-after: avoid; break-before: avoid; font-variant-ligatures: no-common-ligatures; }
+  #write { margin-top: 0px; border-color: transparent !important; padding-top: 0px !important; padding-bottom: 0px !important; }
+  .typora-export * { -webkit-print-color-adjust: exact; }
+  .typora-export #write { break-after: avoid; }
+  .typora-export #write::after { height: 0px; }
+  .is-mac table { break-inside: avoid; }
+  #write > p:nth-child(1) { margin-top: 0px; }
+  .typora-export-show-outline .typora-export-sidebar { display: none; }
+  figure { overflow-x: visible; }
+}
+.footnote-line { margin-top: 0.714em; font-size: 0.7em; }
+a img, img a { cursor: pointer; }
+pre.md-meta-block { font-size: 0.8rem; min-height: 0.8rem; white-space: pre-wrap; background: rgb(204, 204, 204); display: block; overflow-x: hidden; }
+p > .md-image:only-child:not(.md-img-error) img, p > img:only-child { display: block; margin: auto; }
+#write.first-line-indent p > .md-image:only-child:not(.md-img-error) img { left: -2em; position: relative; }
+p > .md-image:only-child { display: inline-block; width: 100%; }
+#write .MathJax_Display { margin: 0.8em 0px 0px; }
+.md-math-block { width: 100%; }
+.md-math-block:not(:empty)::after { display: none; }
+.MathJax_ref { fill: currentcolor; }
+[contenteditable="true"]:active, [contenteditable="true"]:focus, [contenteditable="false"]:active, [contenteditable="false"]:focus { outline: 0px; box-shadow: none; }
+.md-task-list-item { position: relative; list-style-type: none; }
+.task-list-item.md-task-list-item { padding-left: 0px; }
+.md-task-list-item > input { position: absolute; top: 0px; left: 0px; margin-left: -1.2em; margin-top: calc(1em - 10px); border: none; }
+.math { font-size: 1rem; }
+.md-toc { min-height: 3.58rem; position: relative; font-size: 0.9rem; border-radius: 10px; }
+.md-toc-content { position: relative; margin-left: 0px; }
+.md-toc-content::after, .md-toc::after { display: none; }
+.md-toc-item { display: block; color: rgb(65, 131, 196); }
+.md-toc-item a { text-decoration: none; }
+.md-toc-inner:hover { text-decoration: underline; }
+.md-toc-inner { display: inline-block; cursor: pointer; }
+.md-toc-h1 .md-toc-inner { margin-left: 0px; font-weight: 700; }
+.md-toc-h2 .md-toc-inner { margin-left: 2em; }
+.md-toc-h3 .md-toc-inner { margin-left: 4em; }
+.md-toc-h4 .md-toc-inner { margin-left: 6em; }
+.md-toc-h5 .md-toc-inner { margin-left: 8em; }
+.md-toc-h6 .md-toc-inner { margin-left: 10em; }
+@media screen and (max-width: 48em) {
+  .md-toc-h3 .md-toc-inner { margin-left: 3.5em; }
+  .md-toc-h4 .md-toc-inner { margin-left: 5em; }
+  .md-toc-h5 .md-toc-inner { margin-left: 6.5em; }
+  .md-toc-h6 .md-toc-inner { margin-left: 8em; }
+}
+a.md-toc-inner { font-size: inherit; font-style: inherit; font-weight: inherit; line-height: inherit; }
+.footnote-line a:not(.reversefootnote) { color: inherit; }
+.reversefootnote { font-family: ui-monospace, sans-serif; }
+.md-attr { display: none; }
+.md-fn-count::after { content: "."; }
+code, pre, samp, tt { font-family: var(--monospace); }
+kbd { margin: 0px 0.1em; padding: 0.1em 0.6em; font-size: 0.8em; color: rgb(36, 39, 41); background: rgb(255, 255, 255); border: 1px solid rgb(173, 179, 185); border-radius: 3px; box-shadow: rgba(12, 13, 14, 0.2) 0px 1px 0px, rgb(255, 255, 255) 0px 0px 0px 2px inset; white-space: nowrap; vertical-align: middle; }
+.md-comment { color: rgb(162, 127, 3); opacity: 0.6; font-family: var(--monospace); }
+code { text-align: left; vertical-align: initial; }
+a.md-print-anchor { white-space: pre !important; border-width: initial !important; border-style: none !important; border-color: initial !important; display: inline-block !important; position: absolute !important; width: 1px !important; right: 0px !important; outline: 0px !important; background: 0px 0px !important; text-decoration: initial !important; text-shadow: initial !important; }
+.os-windows.monocolor-emoji .md-emoji { font-family: "Segoe UI Symbol", sans-serif; }
+.md-diagram-panel > svg { max-width: 100%; }
+[lang="flow"] svg, [lang="mermaid"] svg { max-width: 100%; height: auto; }
+[lang="mermaid"] .node text { font-size: 1rem; }
+table tr th { border-bottom: 0px; }
+video { max-width: 100%; display: block; margin: 0px auto; }
+iframe { max-width: 100%; width: 100%; border: none; }
+.highlight td, .highlight tr { border: 0px; }
+mark { background: rgb(255, 255, 0); color: rgb(0, 0, 0); }
+.md-html-inline .md-plain, .md-html-inline strong, mark .md-inline-math, mark strong { color: inherit; }
+.md-expand mark .md-meta { opacity: 0.3 !important; }
+mark .md-meta { color: rgb(0, 0, 0); }
+@media print {
+  .typora-export h1, .typora-export h2, .typora-export h3, .typora-export h4, .typora-export h5, .typora-export h6 { break-inside: avoid; }
+}
+.md-diagram-panel .messageText { stroke: none !important; }
+.md-diagram-panel .start-state { fill: var(--node-fill); }
+.md-diagram-panel .edgeLabel rect { opacity: 1 !important; }
+.md-fences.md-fences-math { font-size: 1em; }
+.md-fences-advanced:not(.md-focus) { padding: 0px; white-space: nowrap; border: 0px; }
+.md-fences-advanced:not(.md-focus) { background: inherit; }
+.typora-export-show-outline .typora-export-content { max-width: 1440px; margin: auto; display: flex; flex-direction: row; }
+.typora-export-sidebar { width: 300px; font-size: 0.8rem; margin-top: 80px; margin-right: 18px; }
+.typora-export-show-outline #write { --webkit-flex: 2; flex: 2 1 0%; }
+.typora-export-sidebar .outline-content { position: fixed; top: 0px; max-height: 100%; overflow: hidden auto; padding-bottom: 30px; padding-top: 60px; width: 300px; }
+@media screen and (max-width: 1024px) {
+  .typora-export-sidebar, .typora-export-sidebar .outline-content { width: 240px; }
+}
+@media screen and (max-width: 800px) {
+  .typora-export-sidebar { display: none; }
+}
+.outline-content li, .outline-content ul { margin-left: 0px; margin-right: 0px; padding-left: 0px; padding-right: 0px; list-style: none; overflow-wrap: anywhere; }
+.outline-content ul { margin-top: 0px; margin-bottom: 0px; }
+.outline-content strong { font-weight: 400; }
+.outline-expander { width: 1rem; height: 1.42857rem; position: relative; display: table-cell; vertical-align: middle; cursor: pointer; padding-left: 4px; }
+.outline-expander::before { content: ""; position: relative; font-family: Ionicons; display: inline-block; font-size: 8px; vertical-align: middle; }
+.outline-item { padding-top: 3px; padding-bottom: 3px; cursor: pointer; }
+.outline-expander:hover::before { content: ""; }
+.outline-h1 > .outline-item { padding-left: 0px; }
+.outline-h2 > .outline-item { padding-left: 1em; }
+.outline-h3 > .outline-item { padding-left: 2em; }
+.outline-h4 > .outline-item { padding-left: 3em; }
+.outline-h5 > .outline-item { padding-left: 4em; }
+.outline-h6 > .outline-item { padding-left: 5em; }
+.outline-label { cursor: pointer; display: table-cell; vertical-align: middle; text-decoration: none; color: inherit; }
+.outline-label:hover { text-decoration: underline; }
+.outline-item:hover { border-color: rgb(245, 245, 245); background-color: var(--item-hover-bg-color); }
+.outline-item:hover { margin-left: -28px; margin-right: -28px; border-left: 28px solid transparent; border-right: 28px solid transparent; }
+.outline-item-single .outline-expander::before, .outline-item-single .outline-expander:hover::before { display: none; }
+.outline-item-open > .outline-item > .outline-expander::before { content: ""; }
+.outline-children { display: none; }
+.info-panel-tab-wrapper { display: none; }
+.outline-item-open > .outline-children { display: block; }
+.typora-export .outline-item { padding-top: 1px; padding-bottom: 1px; }
+.typora-export .outline-item:hover { margin-right: -8px; border-right: 8px solid transparent; }
+.typora-export .outline-expander::before { content: "+"; font-family: inherit; top: -1px; }
+.typora-export .outline-expander:hover::before, .typora-export .outline-item-open > .outline-item > .outline-expander::before { content: "−"; }
+.typora-export-collapse-outline .outline-children { display: none; }
+.typora-export-collapse-outline .outline-item-open > .outline-children, .typora-export-no-collapse-outline .outline-children { display: block; }
+.typora-export-no-collapse-outline .outline-expander::before { content: "" !important; }
+.typora-export-show-outline .outline-item-active > .outline-item .outline-label { font-weight: 700; }
+.md-inline-math-container mjx-container { zoom: 0.95; }
+mjx-container { break-inside: avoid; }
+.md-alert.md-alert-note { border-left-color: rgb(9, 105, 218); }
+.md-alert.md-alert-important { border-left-color: rgb(130, 80, 223); }
+.md-alert.md-alert-warning { border-left-color: rgb(154, 103, 0); }
+.md-alert.md-alert-tip { border-left-color: rgb(31, 136, 61); }
+.md-alert.md-alert-caution { border-left-color: rgb(207, 34, 46); }
+.md-alert { padding: 0px 1em; margin-bottom: 16px; color: inherit; border-left: 0.25em solid rgb(0, 0, 0); }
+.md-alert-text-note { color: rgb(9, 105, 218); }
+.md-alert-text-important { color: rgb(130, 80, 223); }
+.md-alert-text-warning { color: rgb(154, 103, 0); }
+.md-alert-text-tip { color: rgb(31, 136, 61); }
+.md-alert-text-caution { color: rgb(207, 34, 46); }
+.md-alert-text { font-size: 0.9rem; font-weight: 700; }
+.md-alert-text svg { fill: currentcolor; position: relative; top: 0.125em; margin-right: 1ch; overflow: visible; }
+.md-alert-text-container::after { content: attr(data-text); text-transform: capitalize; pointer-events: none; margin-right: 1ch; }
+
+
+:root {
+    --side-bar-bg-color: #fafafa;
+    --control-text-color: #777;
+}
+
+@include-when-export url(https://fonts.googleapis.com/css?family=Open+Sans:400italic,700italic,700,400&subset=latin,latin-ext);
+
+/* open-sans-regular - latin-ext_latin */
+  /* open-sans-italic - latin-ext_latin */
+    /* open-sans-700 - latin-ext_latin */
+    /* open-sans-700italic - latin-ext_latin */
+  html {
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+}
+
+body {
+    font-family: "Open Sans","Clear Sans", "Helvetica Neue", Helvetica, Arial, 'Segoe UI Emoji', sans-serif;
+    color: rgb(51, 51, 51);
+    line-height: 1.6;
+}
+
+#write {
+    max-width: 860px;
+  	margin: 0 auto;
+  	padding: 30px;
+    padding-bottom: 100px;
+}
+
+@media only screen and (min-width: 1400px) {
+	#write {
+		max-width: 1024px;
+	}
+}
+
+@media only screen and (min-width: 1800px) {
+	#write {
+		max-width: 1200px;
+	}
+}
+
+#write > ul:first-child,
+#write > ol:first-child{
+    margin-top: 30px;
+}
+
+a {
+    color: #4183C4;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    position: relative;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    font-weight: bold;
+    line-height: 1.4;
+    cursor: text;
+}
+h1:hover a.anchor,
+h2:hover a.anchor,
+h3:hover a.anchor,
+h4:hover a.anchor,
+h5:hover a.anchor,
+h6:hover a.anchor {
+    text-decoration: none;
+}
+h1 tt,
+h1 code {
+    font-size: inherit;
+}
+h2 tt,
+h2 code {
+    font-size: inherit;
+}
+h3 tt,
+h3 code {
+    font-size: inherit;
+}
+h4 tt,
+h4 code {
+    font-size: inherit;
+}
+h5 tt,
+h5 code {
+    font-size: inherit;
+}
+h6 tt,
+h6 code {
+    font-size: inherit;
+}
+h1 {
+    font-size: 2.25em;
+    line-height: 1.2;
+    border-bottom: 1px solid #eee;
+}
+h2 {
+    font-size: 1.75em;
+    line-height: 1.225;
+    border-bottom: 1px solid #eee;
+}
+
+/*@media print {
+    .typora-export h1,
+    .typora-export h2 {
+        border-bottom: none;
+        padding-bottom: initial;
+    }
+
+    .typora-export h1::after,
+    .typora-export h2::after {
+        content: "";
+        display: block;
+        height: 100px;
+        margin-top: -96px;
+        border-top: 1px solid #eee;
+    }
+}*/
+
+h3 {
+    font-size: 1.5em;
+    line-height: 1.43;
+}
+h4 {
+    font-size: 1.25em;
+}
+h5 {
+    font-size: 1em;
+}
+h6 {
+   font-size: 1em;
+    color: #777;
+}
+p,
+blockquote,
+ul,
+ol,
+dl,
+table{
+    margin: 0.8em 0;
+}
+li>ol,
+li>ul {
+    margin: 0 0;
+}
+hr {
+    height: 2px;
+    padding: 0;
+    margin: 16px 0;
+    background-color: #e7e7e7;
+    border: 0 none;
+    overflow: hidden;
+    box-sizing: content-box;
+}
+
+li p.first {
+    display: inline-block;
+}
+ul,
+ol {
+    padding-left: 30px;
+}
+ul:first-child,
+ol:first-child {
+    margin-top: 0;
+}
+ul:last-child,
+ol:last-child {
+    margin-bottom: 0;
+}
+blockquote {
+    border-left: 4px solid #dfe2e5;
+    padding: 0 15px;
+    color: #777777;
+}
+blockquote blockquote {
+    padding-right: 0;
+}
+table {
+    padding: 0;
+    word-break: initial;
+}
+table tr {
+    border: 1px solid #dfe2e5;
+    margin: 0;
+    padding: 0;
+}
+table tr:nth-child(2n),
+thead {
+    background-color: #f8f8f8;
+}
+table th {
+    font-weight: bold;
+    border: 1px solid #dfe2e5;
+    border-bottom: 0;
+    margin: 0;
+    padding: 6px 13px;
+}
+table td {
+    border: 1px solid #dfe2e5;
+    margin: 0;
+    padding: 6px 13px;
+}
+table th:first-child,
+table td:first-child {
+    margin-top: 0;
+}
+table th:last-child,
+table td:last-child {
+    margin-bottom: 0;
+}
+
+.CodeMirror-lines {
+    padding-left: 4px;
+}
+
+.code-tooltip {
+    box-shadow: 0 1px 1px 0 rgba(0,28,36,.3);
+    border-top: 1px solid #eef2f2;
+}
+
+.md-fences,
+code,
+tt {
+    border: 1px solid #e7eaed;
+    background-color: #f8f8f8;
+    border-radius: 3px;
+    padding: 0;
+    padding: 2px 4px 0px 4px;
+    font-size: 0.9em;
+}
+
+code {
+    background-color: #f3f4f4;
+    padding: 0 2px 0 2px;
+}
+
+.md-fences {
+    margin-bottom: 15px;
+    margin-top: 15px;
+    padding-top: 8px;
+    padding-bottom: 6px;
+}
+
+
+.md-task-list-item > input {
+  margin-left: -1.3em;
+}
+
+@media print {
+    html {
+        font-size: 13px;
+    }
+    pre {
+        page-break-inside: avoid;
+        word-wrap: break-word;
+    }
+}
+
+.md-fences {
+	background-color: #f8f8f8;
+}
+#write pre.md-meta-block {
+	padding: 1rem;
+    font-size: 85%;
+    line-height: 1.45;
+    background-color: #f7f7f7;
+    border: 0;
+    border-radius: 3px;
+    color: #777777;
+    margin-top: 0 !important;
+}
+
+.mathjax-block>.code-tooltip {
+	bottom: .375rem;
+}
+
+.md-mathjax-midline {
+    background: #fafafa;
+}
+
+#write>h3.md-focus:before{
+	left: -1.5625rem;
+	top: .375rem;
+}
+#write>h4.md-focus:before{
+	left: -1.5625rem;
+	top: .285714286rem;
+}
+#write>h5.md-focus:before{
+	left: -1.5625rem;
+	top: .285714286rem;
+}
+#write>h6.md-focus:before{
+	left: -1.5625rem;
+	top: .285714286rem;
+}
+.md-image>.md-meta {
+    /*border: 1px solid #ddd;*/
+    border-radius: 3px;
+    padding: 2px 0px 0px 4px;
+    font-size: 0.9em;
+    color: inherit;
+}
+
+.md-tag {
+    color: #a7a7a7;
+    opacity: 1;
+}
+
+.md-toc { 
+    margin-top:20px;
+    padding-bottom:20px;
+}
+
+.sidebar-tabs {
+    border-bottom: none;
+}
+
+#typora-quick-open {
+    border: 1px solid #ddd;
+    background-color: #f8f8f8;
+}
+
+#typora-quick-open-item {
+    background-color: #FAFAFA;
+    border-color: #FEFEFE #e5e5e5 #e5e5e5 #eee;
+    border-style: solid;
+    border-width: 1px;
+}
+
+/** focus mode */
+.on-focus-mode blockquote {
+    border-left-color: rgba(85, 85, 85, 0.12);
+}
+
+header, .context-menu, .megamenu-content, footer{
+    font-family: "Segoe UI", "Arial", sans-serif;
+}
+
+.file-node-content:hover .file-node-icon,
+.file-node-content:hover .file-node-open-state{
+    visibility: visible;
+}
+
+.mac-seamless-mode #typora-sidebar {
+    background-color: #fafafa;
+    background-color: var(--side-bar-bg-color);
+}
+
+.mac-os #write{
+    caret-color: AccentColor;
+}
+
+.md-lang {
+    color: #b4654d;
+}
+
+/*.html-for-mac {
+    --item-hover-bg-color: #E6F0FE;
+}*/
+
+#md-notification .btn {
+    border: 0;
+}
+
+.dropdown-menu .divider {
+    border-color: #e5e5e5;
+    opacity: 0.4;
+}
+
+.ty-preferences .window-content {
+    background-color: #fafafa;
+}
+
+.ty-preferences .nav-group-item.active {
+    color: white;
+    background: #999;
+}
+
+.menu-item-container a.menu-style-btn {
+    background-color: #f5f8fa;
+    background-image: linear-gradient( 180deg , hsla(0, 0%, 100%, 0.8), hsla(0, 0%, 100%, 0)); 
+}
+
+
+
+</style><title>poster_de</title>
+</head>
+<body class='typora-export os-windows'><div class='typora-export-content'>
+<div id='write'  class=''><h1 id='poster-generator'><span>Poster Generator</span></h1><p><strong><span>JavaScript Anwendung zur Zusammenstellung von mehreren Bildern zu einem Poster</span></strong></p><p><span>v2.1 2024-06-03 (c) RannerDesign, MIT License</span></p><h2 id='zielsetzung'><span>Zielsetzung</span></h2><p><span>Aufbau einer Bilddatei (&quot;Poster&quot;) im jpeg-Format, die aus mehreren Einzelbildern zusammengesetzt ist. Die Einzelbilder können dabei beliebige Seitenverhältnisse besitzen. Die Kombination erfolgt entweder als Raster mit vorgegebener Anzahl Zeilen und Spalten oder in Form horizontaler oder vertikaler Streifen, bei denen die Einzelbilder auf gleiche Höhe bzw. Breite skaliert werden.</span></p><h2 id='voraussetzungen-und-installation'><span>Voraussetzungen und Installation</span></h2><p><span>Die Anwendung wird als HTML-Dokument auf einem Webserver bereitgestellt. Eine Installation ist nicht erforderlich. Voraussetzung zur Nutzung ist ein Web-Browser mit JavaScript-Unterstützung. Die Anwendung ist getestet mit Google Chrome 125, FireFox 126 und Safari IOS 17.5, sollte aber auf den meisten gängigen Browsern lauffähig sein.</span></p><h2 id='verwendete-softwarekomponenten'><span>Verwendete Softwarekomponenten</span></h2><p><span>Folgende Ideen und Programme anderer Autoren wurden unter Berücksichtigung der jeweiligen Lizenzbedingungen für diese Anwendung eingesetzt:</span></p><ul><li><p><strong><span>dom-to-image</span></strong><span> (c) 2015 Anatolii Saienko, MIT License, </span><a href='https://github.com/tsayen/dom-to-image' target='_blank' class='url'>https://github.com/tsayen/dom-to-image</a></p></li><li><p><span>Verbesserter </span><strong><span>Algorithmus</span></strong><span> basierend auf einem Dynamic Programming Ansatz von fedja, </span>
+<a href='https://mathoverflow.net/questions/473701/' target='_blank' class='url'>https://mathoverflow.net/questions/473701/</a></p></li></ul><h2 id='benutzeroberfläche'><span>Benutzeroberfläche</span></h2><h3 id='1-bilder-auswählen'><span>1. Bilder auswählen</span></h3><h4 id='11-bildauswahl-per-drag-and-drop-oder-dateiauswahl'><span>1.1. Bildauswahl per Drag-and-Drop oder Dateiauswahl</span></h4><p><span>Für die Auswahl von Bildern, die verwendet werden sollen, stehen 2 Möglichkeiten zur Verfügung:</span></p><ol start='' ><li><p><span>durch Ziehen von einem oder mehreren Bildern aus dem Explorer in die gestrichelt umrandete Fläche</span></p></li><li><p><span>durch Klicken in diese Flächen und Nutzung des danach geöffneten Dateiauswahldialogs</span></p></li></ol><p><span>Nach der Bildauswahl wird die Anzahl Bilder rechts neben der gestrichelt umrandeten Fläche angezeigt. Zusätzlich wird im unteren Bereich der Webseite die Liste der ausgewählten Dateinamen angezeigt.</span></p><h4 id='12-auswahl-löschen'><span>1.2. Auswahl löschen</span></h4><p><span>Falls versehentlich Bilder ausgewählt wurden, kann die gesamte Auswahl durch die Schaltfläche </span><em><strong><span>Auswahl löschen</span></strong></em><span> entfernt werden. Einzelne Bilder können so nicht gelöscht werden, sondern erst nach dem Laden von Bildern (s. Schritt 2)</span></p><h4 id='13-hilfe'><span>1.3. Hilfe</span></h4><p><span>Die Schaltfläche </span><em><strong><span>Hilfe</span></strong></em><span> zeigt diese Programmbeschreibung an.</span></p><h3 id='2-bilder-laden'><span>2. Bilder laden</span></h3><h4 id='21-bilder-laden'><span>2.1. Bilder laden</span></h4><p><span>Mit Hilfe der Schaltfläche </span><em><strong><span>Bilder laden</span></strong></em><span> werden alle ausgewählten Bilder in das Programm geladen. Während des Ladevorgangs erscheint neben der Schaltfläche ein roter Punkt und die Anzeige der noch zu ladenden Bilder. Nach Abschluss des Ladevorgangs entfällt die Anzeige der ausgewählten Bilder unter Schritt 1 und die Liste am unteren Ende der Webseite.</span></p><p><span>Dafür wird jetzt am unteren Ende der Webseite die Liste der geladenen Bilder angezeigt, jeweils mit kleinem Bild und den wichtigsten Metadaten. In dieser Liste können einzelne Bilder gelöscht (Klick auf den Papierkorb daneben) oder verschoben werden, um die Reihenfolge zu ändern. Das Verschieben erfolgt mittels Drag-and-Drop, in dem ein Bild angeklickt und bei gedrückter Maustaste auf ein anderes Bild gezogen wird.</span></p><p><span>Die Sequenz </span><u><span>1. Bilder auswählen</span></u><span> und </span><u><span>2. Bilder laden</span></u><span> kann beliebig oft nacheinander ausgeführt werden, um Bilder in Gruppen zu laden, bzw. dazwischen auch einzelne Bilder wieder zu löschen oder die Reihenfolge verändern. Auch wenn schon die Funktion </span><em><span>6. Poster erstellen</span></em><span> ausgeführt wurde, können weitere Bilder geladen oder vorhandene wieder entfernt werden.</span></p><h4 id='22-bilder-löschen'><span>2.2. Bilder löschen</span></h4><p><span>Mittels Schaltfläche </span><em><strong><span>Bilder löschen</span></strong></em><span> werden </span><u><span>alle</span></u><span> geladenen Bilder entfernt. Einzelne Bilder können in der Liste am Ende der Seite gelöscht werden.</span></p><h3 id='3-poster-typ-festlegen'><span>3. Poster-Typ festlegen</span></h3><p><span>Die Anwendung unterstützt 3 verschiedene Arten (&quot;Poster-Typ&quot;) im Aufbau des Posters. </span></p><p><span>Diese sind nachfolgend beschrieben, wobei bereits die Besonderheiten einiger Parameter aus Schritt 5 erläutert werden.</span></p><h4 id='31-raster'><span>3.1. Raster</span></h4><p><span>Dieser Poster-Typ ist vor allem für Bildmaterial geeignet, das aus einheitlichen Seitenverhältnissen der Bilder besteht. Die Struktur des Posters entspricht einer Tabelle mit gegebener Anzahl Zeilen und Spalten.</span></p><p><img src="poster_help1cover.jpg" referrerpolicy="no-referrer" alt="poster1cover"></p><p><span>Als Parameter werden zunächst </span><strong><span>Anzahl Spalten</span></strong><span> und </span><strong><span>Anzahl Zeilen</span></strong><span> benötigt. Sofern eine Zeilenzahl nicht angegeben wird, werden so viele Zeilen generiert, um alle geladenen Bilder anzuzeigen. Sofern Anzahl Zeilen und Spalten angegeben werden, wird das Poster mit diesen Zahlen generiert. Wenn die Anzahl geladener Bilder nicht ausreicht, entstehen leere Flächen im Poster. Wenn die Anzahl geladener Bilder größer ist als (Anzahl Zeilen * Anzahl Spalten) werden die übrigen Bilder nicht ins Poster übernommen.</span></p><p><span>Alle einzelnen Bilder werden in einem gleich dimensionierten Rechteck dargestellt. Dieses wird durch </span><strong><span>Einzelbild Breite</span></strong><span>, </span><strong><span>Einzelbild Höhe</span></strong><span> und </span><strong><span>Seitenverhältnis</span></strong><span> (Breite : Höhe) bestimmt. Werden Breite und Höhe angegeben, sind diese Angaben maßgeblich und eine zusätzliche Eingabe bei Seitenverhältnis ignoriert.</span></p><p><span>Wird nur eine Angabe, d.h. Breite oder Höhe, gemacht, errechnet sich die fehlende Größe über das </span><strong><span>Seitenverhältnis</span></strong><span>.</span></p><p><span>Für das Seitenverhältnis sind verschiedene Eingaben möglich:</span></p><ul><li><p><span>Dezimalzahl (mit Punkt oder Komma als Dezimaltrennzeichen)</span></p></li><li><p><span>Eine Angabe Breite : Höhe (z.B. &quot;4:3&quot;)</span></p></li><li><p><span>&quot;</span><strong><span>E</span></strong><span>&quot;: es wird das Seitenverhältnis des ersten Bildes der geladenen Liste verwendet</span></p></li><li><p><span>&quot;</span><strong><span>L</span></strong><span>&quot;: es wird das Seitenverhältnis des letzten Bildes der geladenen Liste verwendet</span></p></li><li><p><span>&quot;</span><strong><span>D</span></strong><span>&quot;: es wird der arithmetische Durchschnittswert der Seitenverhältnisse aller geladenen Bilder verwendet</span></p></li><li><p><span>&quot;</span><strong><span>M</span></strong><span>&quot;: es wird das Seitenverhältnis verwendet, das bei den meisten geladenen Bildern vorkommt</span></p></li></ul><p><span>Wenn das Seitenverhältnis leer gelassen wird, wird &quot;D&quot; angenommen.</span></p><p><span>Da beim Poster-Typ Raster als Platz für alle Bilder das gleiche Rechteck verwendet wird, muss für Bilder, deren Seitenverhältnis nicht diesem Rechteck entsprechen, entschieden werden, wie das Einzelbild in das Rechteck eingepasst wird. Hierfür stehen 3 Optionen zur Verfügung:</span></p><p><strong><span>Originalverhältnis</span></strong></p><p><img src="poster_help1contain.jpg" referrerpolicy="no-referrer" alt="poster1contain"></p><p><span>Hier wird das gesamte Bild dargestellt unter Erhalt seines Seitenverhältnisses, dies hat zur Folge, dass das Rechteck u.U. nicht vollständig ausgefüllt wird und oben und unten bzw. rechts und links leere Flächen mit Hintergrundfarbe entstehen</span></p><p><strong><span>Ausfüllen</span></strong></p><p><img src="poster_help1fill.jpg" referrerpolicy="no-referrer" alt="poster1fill"></p><p><span>Hier wird das gesamte Bild dargestellt, wobei das Seitenverhältnis nicht erhalten bleibt, sondern Breite und Höhe des Einzelbildes auf die Größe des Rechtecks skaliert wird. Dies hat u.U. eine erhebliche Verzerrung zur Folge</span></p><p><strong><span>Ausschnitt</span></strong></p><p><img src="poster_help1cover.jpg" referrerpolicy="no-referrer" alt="poster1cover"></p><p><span>Hier wird ein Teil des Einzelbildes dargestellt unter Erhalt des Seitenverhältnisses. Dadurch wird das gesamte Rechteck ausgefüllt und gleichzeitig eine Verzerrung vermieden. Der Zuschnitt erfolgt mittenzentriert, so dass rechts und links bzw. oben und unten etwas vom Originalbild fehlt</span></p><h4 id='32-streifen-horizontal'><span>3.2. Streifen horizontal</span></h4><p><span>Dieser Poster-Typ ist gut geeignet für Bildmaterial mit sehr unterschiedlichen Seitenverhältnissen. Die Bilder werden in horizontalen Streifen angeordnet, somit haben alle Bilder in einem Streifen die gleiche Höhe.</span></p><p><img src="poster_help2.jpg" referrerpolicy="no-referrer" alt="poster2"></p><p>&nbsp;</p><p><span>Bilder im Hochformat sind damit etwas &quot;benachteiligt&quot;, da sie weniger Fläche erhalten als Bilder im Querformat. Die verschiedenen Streifen können unterschiedlich hoch sein, da sie immer so skaliert werden, dass die Posterbreite vollständig ausgenutzt wird.</span></p><p><span>Bei diesem Poster-Typ ist nur die </span><strong><span>Gesamtbreite</span></strong><span> des Posters exakt vorgebbar. Die </span><strong><span>Höhe</span></strong><span> kann nur ungefähr gewünscht werden, da für die Skalierung der Streifen auf Posterbreite und der damit einhergehenden Höhenveränderung Freiraum zur Anpassung notwendig ist. Es kann allerdings auch auf die Angabe der Höhe verzichtet werden. Dafür muss dann die </span><strong><span>Anzahl</span></strong><span> horizontaler Streifen vorgegeben werden. Die Höhe ergibt sich dann durch die Berechnung.</span></p><h4 id='33-streifen-vertikal'><span>3.3. Streifen vertikal</span></h4><p><span>Dieser Poster-Typ ist ebenfalls gut geeignet für Bildmaterial mit sehr unterschiedlichen Seitenverhältnissen. Die Bilder werden in vertikalen Streifen angeordnet, somit haben alle Bilder in einem Streifen die gleiche Breite.</span></p><p><img src="poster_help3.jpg" referrerpolicy="no-referrer" alt="poster3"></p><p><span>Bilder im Querformat sind damit etwas &quot;benachteiligt&quot;, da sie weniger Fläche erhalten als Bilder im Hochformat. Die verschiedenen Streifen können unterschiedlich breit sein, da sie immer so skaliert werden, dass die Posterhöhe vollständig ausgenutzt wird.</span></p><p><span>Bei diesem Poster-Typ ist nur die </span><strong><span>Gesamthöhe</span></strong><span> des Posters exakt vorgebbar. Die </span><strong><span>Breite</span></strong><span> kann nur ungefähr gewünscht werden, da für die Skalierung der Streifen auf Posterhöhe und der damit einhergehenden Breitenveränderung Freiraum zur Anpassung notwendig ist. Es kann allerdings auch auf die Angabe der Breite verzichtet werden. Dafür muss dann die </span><strong><span>Anzahl</span></strong><span> vertikaler Streifen vorgegeben werden. Die Breite ergibt sich dann durch die Berechnung.</span></p><p><span>Welcher Poster-Typ der beste für eine gegeben Menge an Bildern ist, ist Geschmackssache und kann oft nur durch Probieren herausgefunden werden. Manchmal hilft auch eine Verschiebung in der Bildreihenfolge, um bessere Wirkung zu erzielen.</span></p><h5 id='4-ausgabeformat-festlegen'><span>4. Ausgabeformat festlegen</span></h5><p><span>Die Erzeugung der jpeg-Datei für das Poster kann mit dieser Anwendung technisch auf 2 verschiedenen Wegen erfolgen. Dies schien anfänglich erforderlich, da verschiedene Browserversionen unterschiedliches Verhalten zeigten und bei großer Anzahl Bilder unterschiedliche Performanceeinbußen resultierten. Dieses Verhalten ist mittlerweile nicht mehr der Fall, die beiden Ausgabeformate führen in den meisten Fällen zum nahezu exakt gleichen Ergebnis.</span></p><p><span>Beide Möglichkeiten werden dennoch parallel beibehalten, da es im Detail doch noch ein paar Unterschiede gibt, die nachfolgend beschrieben sind.</span></p><h4 id='41-canvas'><span>4.1. Canvas</span></h4><p><span>Dieses Ausgabeformat ist der Standardfall. Es erfüllt alle Grundfunktionen der Anwendung ohne Einschränkung.</span></p><h4 id='42-html'><span>4.2. HTML</span></h4><p><span>Dieses Ausgabeformat bietet über die Grundfunktionen hinaus noch die Funktion Vergrößerung sowie die Möglichkeit, die ganze Datei im .html-Format zu speichern (s. 6. Punkt)</span></p><h3 id='5-poster-parameter'><span>5. Poster Parameter</span></h3><p><span>In diesem Abschnitt sind alle Parameter zusammen gestellt, mit der die Erzeugung des Posters gestaltet und beeinflusst werden kann. Einige Parameter wurden bereits im Abschnitt 3 beschrieben, da sie spezifisch für Poster-Typ sind.</span></p><p><span>Folgende Parameter sind für alle Varianten gültig:</span></p><p><strong><span>Posterränder</span></strong><span>: Randabstand der Bilder in Pixel</span>
+<span>Bei Eingabe von einer Zahl ist dies der Abstand oben, rechts, unten und links.</span>
+<span>Bei Eingabe von 2 durch Komma getrennte Zahlen bestimmt die erste den Randabstand oben und unten und die zweite rechts und links.</span>
+<span>Bei Eingabe von 3 durch Kommata getrennte Zahlen bestimmt die erste oben, die zweite rechts und links und die dritte unten.</span>
+<span>Bei Eingabe von 4 durch Kommata getrennten Zahlen bestimmen diese die Randabstände in der Reihenfolge oben, rechts, unten, links.</span></p><p><strong><span>Bildzwischenraum</span></strong><span>: Abstand zwischen den Einzelbildern in Pixel</span>
+<span>Bei Eingabe einer Zahl gilt dies sowohl für horizontale wie vertikale Abstände, bei 2 durch Komma getrennten Zahlen bestimmt die erste den horizontalen und die zweite den vertikalen Abstand.</span></p><p><strong><span>Hintergrundfarbe</span></strong><span>: Farbwahlmöglichkeit als RGB, HSL oder hex definiert die Hintergrundfarbe des gesamten Posters.</span></p><p><strong><span>Rahmenstärke</span></strong><span>: Dicke des Rahmens um das Einzelbild in Pixel</span></p><p><strong><span>Rahmenmuster / Rahmenstil</span></strong><span>: Hier gibt es Unterschiede abhängig vom Ausgabeformat.</span></p><p><span>Im Falle </span><strong><span>Canvas</span></strong><span> kann hier nur ein Linienmuster (z.B. für gestrichelte Linien) eingetragen werden. Dieses besteht aus einer oder mehreren durch Leerzeichen oder Kommata getrennten Zahlen. Die einzelnen Zahlen stellen Pixelangaben dar. Ist die Anzahl der Zahlen ungerade, wird die Zahlenreihe nochmals an sich angehängt, so dass nun eine gerade Anzahl vorliegt. Die Zahlen werden dann abwechselnd als Längenangaben für Strich und Zwischenraum der Linie interpretiert.</span></p><p><span>Im Falle </span><strong><span>HTML</span></strong><span> kann der Rahmenstil aus einer Auswahlliste selektiert werden. Die angebotenen Optionen werden typischerweise zur Gestaltung von Webseiten verwendet. Inwieweit insbesondere die spezielleren Optionen sich zur Postergestaltung eignen, kann nur durch Ausprobieren festgestellt werden.</span></p><p><strong><span>Rahmenfarbe</span></strong><span>: Farbwahlmöglichkeit als RGB, HSL oder hex definiert die Farbe des Rahmens um das Einzelbild.</span></p><p><strong><span>Eckenrundung</span></strong><span>: Rundungsradius aller Ecken in Pixel</span></p><p><strong><span>Postername</span></strong><span>: Hier kann ein Name für das Poster-Fenster angegeben werden. Falls leer, wird als Name </span><code>posterX</code><span> verwendet, wobei X=1, 2 oder 3 den drei Poster-Typen entspricht. Bei erneuter Poster-Erzeugung wird das Poster-Fenster jeweils wiederverwendet und überschrieben. Will man mehrere Posterentwürfe ohne jpeg-Ausgabe vergleichen kann man dies erreichen, indem man jeweils vor der Erzeugung einen neuen Posternamen vergibt. Dann wird für jeden Posternamen ein neues Fenster erstellt.</span></p><p><strong><span>Ausgabequalität</span></strong><span>: Dezimalzahl (mit Punkt oder Komma als Dezimaltrennzeichen) zwischen 0 und 1, die die jpeg-Qualität und damit indirekt die Dateigröße beeinflusst. Voreinstellung ist 0,90.</span></p><h3 id='6-poster-erstellen'><span>6. Poster erstellen</span></h3><h4 id='61-poster-anzeigen'><span>6.1. Poster anzeigen</span></h4><p><span>Mit der Schaltfläche </span><em><strong><span>Poster anzeigen</span></strong></em><span> erfolgt die Erstellung des Posters. Dies erfolgt in einem eigenen Fester, das neu entsteht oder - bei Folgeaufrufen - wiederverwendet wird. Da das Fenster wiederverwendet wird, sollte man es schließen, wenn sich die Außenmaße des Posters ändern. Ansonsten muss man es manuell auf die richtige Größe bringen.</span></p><p><span>Die Anzeige im Fenster dient primär zur Prüfung des Ergebnisses, so dass ggf. Programmoptionen, Parameter oder Bildreihenfolgen geändert werden können. Zudem ist der angezeigte Zustand die Basis für die nachfolgende Funktion </span><u><span>Poster speichern</span></u><span>.</span></p><p><span>Im Ausgabeformat </span><strong><span>HTML</span></strong><span> besitzt dieses Fenster darüber hinaus noch Zusatzfunktionen:</span></p><p><strong><span>Vergrößerung</span></strong><span>: Durch Klicken auf ein Einzelbild erscheint dieses vergrößert, zudem kann man durch die Bilderreihe navigieren mit den Tasten Pfeil-rechts, Pfeil-links, Bild-hoch, Bild-runter, Pos1 und End oder durch Klick auf die entsprechenden Schaltflächen. Man hat somit gleich eine kleine Bildergalerie.</span></p><p><strong><span>Speichern als HTML</span></strong><span>: Mit der Tastenkombination Strg+s kann das Poster mit der zuvor beschriebenen Funktionalität als HTML-Datei gespeichert werden. Die ausgegebene .html-Datei enthält alle verwendeten Bilder in voller Auflösung, dadurch ist der Speicherplatzbedarf dieser Datei ein Vielfaches der korrespondierenden jpeg-Datei. Die .html-Datei kann lokal verwendet und im Browser angezeigt oder aber auch auf einem Webspace im Internet bereitgestellt werden. Diese Funktion sollte nicht mit der nachfolgend beschriebenen Funktion Poster speichern verwechselt werden.</span></p><h4 id='62-poster-speichern'><span>6.2. Poster speichern</span></h4><p><span>Mit der Schaltfläche </span><em><strong><span>Poster speichern</span></strong></em><span> kann das Poster als jpeg-Datei gespeichert werden. Als Dateiname wird der Postername vorgeschlagen, kann jedoch durch Eingabe überschrieben werden.</span></p><p>&nbsp;</p></div></div>
+</body>
+</html>

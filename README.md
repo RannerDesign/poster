@@ -8,6 +8,7 @@ v2.1 2024-06-03 (c) RannerDesign, MIT License
 
 Construction of an image file ("poster") in jpeg format, which is composed of several individual images. The individual images may have any aspect ratio. The combination is either done as a grid with a specified number of rows and columns or in the form of horizontal or vertical stripes, where the individual images are scaled to the same height or width.
 
+
 ## Requirements and Installation
 
 The application may be used locally or be installed on a web server. Only the html-, js- and some image files need to be copied to the target directory. More installation is not required. A web browser with JavaScript support is required to use the application. The application has been tested with Google Chrome 125, FireFox 126 and Safari IOS 17.5, but should run on most common browsers.

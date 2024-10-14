@@ -7,6 +7,8 @@
 	v2.1.2	2024-06-19	Performance optimization
 	v2.1.4	2024-06-25	Stripe optimization by algorithm from fedja
 	v2.1.5	2024-06-27	Calculation no longer separate step
+	v2.1.6	2024-07-01	Bug fixes
+	v2.2.1	2024-10-12	Preset rows for stripes
 */
 	var EL, P, LOG;
 	document.addEventListener('DOMContentLoaded', posterInit);
@@ -15,7 +17,7 @@
 //	------------------------------------------------------------
 	function posterInit() {
 		P = {};
-		P.programVersion = 'Poster Generator v2.1.6';
+		P.programVersion = 'Poster Generator v2.2.1';
 		P.lang = document.documentElement.lang ? document.documentElement.lang : 'en';
 		EL = getAllElementsWithID();
 		presetElements();
@@ -25,7 +27,7 @@
 		P.messages.load(defineMessages());
 		LOG = true;										// Enable console.log output
 		P.RT = new runtime_measurement({console: true});
-		P.log = new logmessage_manager(EL.messagearea, {timeout: 60, messages: msgkey => {return P.messages.getmsg(msgkey);}});
+		P.log = new logmessage_manager(EL.messagearea, {timeout: 60, console: true, messages: msgkey => {return P.messages.getmsg(msgkey);}});
 		P.uploader = new dnd_file_uploader('uploadfilearea', 'imgfile', monitorInput);
 		P.timeout = 500;
 		clearData();
@@ -46,10 +48,12 @@
 		EL.targetWidth2.value = 1440;
 		EL.targetHeight2.value = 960;
 		EL.rowcount2.value = '';
+		EL.rowgrid2.value = '';
 
 		EL.targetHeight3.value = 1440;
 		EL.targetWidth3.value = 960;
 		EL.colcount3.value = '';
+		EL.colgrid3.value = '';
 
 		EL.margins.value = '10';
 		EL.gaps.value = '5';
@@ -279,25 +283,27 @@
 		EL.ctx.fillStyle = P.calc.bgcol;
 		EL.ctx.fillRect(0, 0, EL.canvas.width, EL.canvas.height);
 		EL.filelist.innerHTML = '';
-		P.calc.pos.forEach(item => {
-			if (P.calc.borderCSS || P.calc.corner) {
-				EL.ctx.save();
-				border = canvasBorderWithRoundedCorners(item.left, item.top, item.width, item.height, P.calc.corner);
-				EL.ctx.clip(border);
-			}
-			if (item.clip) {
-				EL.ctx.drawImage(P.pics[item.idx].image, item.clip.left, item.clip.top, item.clip.width, item.clip.height, item.left, item.top, item.width, item.height);
-			} else {
-				EL.ctx.drawImage(P.pics[item.idx].image, item.left, item.top, item.width, item.height);
-			}
-			if (P.calc.borderCSS || P.calc.corner) {
-				EL.ctx.restore();
-				EL.ctx.save();
-				EL.ctx.lineWidth = P.calc.borderwidth;
-				EL.ctx.setLineDash(canvasLineDash());
-				EL.ctx.strokeStyle = P.calc.bordercolor;
-				EL.ctx.stroke(border);
-				EL.ctx.restore();
+		P.calc.pos.forEach((item, ipos) => {
+			if (ipos < P.calc.n) {
+				if (P.calc.borderCSS || P.calc.corner) {
+					EL.ctx.save();
+					border = canvasBorderWithRoundedCorners(item.left, item.top, item.width, item.height, P.calc.corner);
+					EL.ctx.clip(border);
+				}
+				if (item.clip) {
+					EL.ctx.drawImage(P.pics[item.idx].image, item.clip.left, item.clip.top, item.clip.width, item.clip.height, item.left, item.top, item.width, item.height);
+				} else {
+					EL.ctx.drawImage(P.pics[item.idx].image, item.left, item.top, item.width, item.height);
+				}
+				if (P.calc.borderCSS || P.calc.corner) {
+					EL.ctx.restore();
+					EL.ctx.save();
+					EL.ctx.lineWidth = P.calc.borderwidth;
+					EL.ctx.setLineDash(canvasLineDash());
+					EL.ctx.strokeStyle = P.calc.bordercolor;
+					EL.ctx.stroke(border);
+					EL.ctx.restore();
+				}				
 			}
 		});
 		return true;
@@ -349,23 +355,25 @@
 		EL.nocanvas.style.backgroundColor  = P.calc.bgcol;
 		EL.nocanvas.style.position  = 'relative';
 		EL.filelist.innerHTML = '';
-		P.calc.pos.forEach(item => {
-			divele = HTelementChild(EL.nocanvas, 'div', '', {
-				position: 'absolute', 
-				top: item.top + 'px', 
-				left: item.left + 'px', 
-				width: item.width + 'px', 
-				height: item.height + 'px'
-			});
-			imgele = divele.appendChild(P.pics[item.idx].image.cloneNode(true));
-			imgele.id = 'pic' + picnum++;
-			imgele.setAttribute('alt', P.pics[item.idx].file.name);
-			imgele.setAttribute('onclick', 'modalPic(this);');
-			imgele.style.width = item.width + 'px';
-			imgele.style.height = item.height + 'px';
-			if (item.fit) {imgele.style.objectFit = item.fit;}
-			if (P.calc.borderCSS) {imgele.style.border = P.calc.borderCSS;}
-			if (P.calc.cornerCSS) {imgele.style.borderRadius = P.calc.cornerCSS;}
+		P.calc.pos.forEach((item, ipos) => {
+			if (ipos < P.calc.n) {
+				divele = HTelementChild(EL.nocanvas, 'div', '', {
+					position: 'absolute', 
+					top: item.top + 'px', 
+					left: item.left + 'px', 
+					width: item.width + 'px', 
+					height: item.height + 'px'
+				});
+				imgele = divele.appendChild(P.pics[item.idx].image.cloneNode(true));
+				imgele.id = 'pic' + picnum++;
+				imgele.setAttribute('alt', P.pics[item.idx].file.name);
+				imgele.setAttribute('onclick', 'modalPic(this);');
+				imgele.style.width = item.width + 'px';
+				imgele.style.height = item.height + 'px';
+				if (item.fit) {imgele.style.objectFit = item.fit;}
+				if (P.calc.borderCSS) {imgele.style.border = P.calc.borderCSS;}
+				if (P.calc.cornerCSS) {imgele.style.borderRadius = P.calc.cornerCSS;}				
+			}
 		});
 		HTelementChild(P.nocanWindow.document.body, 'div', '', {}, {id: 'modalPic', class: 'modimg'});
 		HTelementChild(P.nocanWindow.document.body, 'script', "document.body.addEventListener('keydown', keyAction);");
@@ -641,9 +649,18 @@
 			P.calc.margins = {};
 		}
 		marginSplit(P.calc.gaps, P.calc.margins, ['gapHorizontal', 'gapVertical']);
+
 		['colcount', 'rowcount', 'singleWidth', 'singleHeight', 'targetWidth', 'targetHeight', 'borderwidth', 'corner'].forEach(key => {
 			P.calc[key] = parseInt(P.calc[key] || 0);
 		});
+		
+		['colgrid', 'rowgrid'].forEach(key => {
+			if (P.calc[key]) {
+				P.calc[key] = parseGritInput(P.calc[key]);
+				if (P.calc[key]) {P.calc.imagesToShow = P.calc[key].reduce((a, b) => a + b, 0);}
+			}
+		});
+		
 		if (P.calc.borderwidth && P.outputType == 1 && !P.calc.borderstyle) {
 			P.calc.borderstyle = 'solid';
 			EL.borderstyle.value = 'solid';
@@ -654,6 +671,21 @@
 		if (!(P.calc.quality > 0.0 && P.calc.quality <= 1.0)) {
 			P.calc.quality = 0.9;
 			EL.quality.value = 0.9;
+		}
+		if (LOG) {console.log('getDialogueParameters - P.calc:', P.calc);}
+	}
+
+	function parseGritInput(grid) {
+//		Convert 1,2,3 ... or 3*4 to array with count of images per row (column)
+		let check = grid.split(/(?:\*|x|X)+/).map(Number);
+		if (check.some(isNaN) || check.length != 2) {
+			check = grid.split(/(?:,| )+/).map(Number);
+			if (check.some(isNaN)) {return false;}
+			return check;
+		} else {
+			let out = [];
+			for (let i=0; i<check[0]; i++) {out.push(check[1]);}
+			return out;
 		}
 	}
 
@@ -747,8 +779,9 @@
 			}
 			P.calc.pos.push(newpos);
 		};
-		P.calc.canvasWidth = P.calc.margins.left + P.calc.margins.right + (P.calc.colcount-1)*P.calc.margins.gapVertical + P.calc.colcount*P.calc.singleWidth;
-		P.calc.canvasHeight = P.calc.margins.top + P.calc.margins.bottom + (P.calc.rowcount-1)*P.calc.margins.gapHorizontal + P.calc.rowcount*P.calc.singleHeight;
+		P.calc.n = P.calc.pos.length;
+		P.calc.canvasWidth = P.calc.margins.left + P.calc.margins.right + (P.calc.colcount-1)*P.calc.margins.gapHorizontal + P.calc.colcount*P.calc.singleWidth;
+		P.calc.canvasHeight = P.calc.margins.top + P.calc.margins.bottom + (P.calc.rowcount-1)*P.calc.margins.gapVertical + P.calc.rowcount*P.calc.singleHeight;
 		P.RT.show('calculate1');
 		return true;
 	}
@@ -759,7 +792,7 @@
 			P.log.write('pwiderr', 'msgerr');
 			return false;
 		}
-		if (!(P.calc.rowcount > 0 || P.calc.targetHeight > 0)) {
+		if (!(P.calc.rowcount > 0 || P.calc.targetHeight > 0 || P.calc.imagesToShow > 0)) {
 			P.log.write('pheighmiss', 'msgerr');
 			return false;
 		}
@@ -770,6 +803,7 @@
 				dim: 'width', 
 				pos: 'left', 
 				key: 'row', 
+				grid: 'rowgrid', 
 				target: 'targetWidth', 
 				canvas: 'canvasWidth', 
 				margin1: P.calc.margins.left, 
@@ -792,7 +826,14 @@
 			P.log.write('invalidwhc', 'msgerr');
 			return false;
 		}
-		P.calc.stripeAssignments = optimizeSegmentationDynPro(P.calc.ratios, P.calc.nStripes);
+		if (P.calc.rowgrid) {
+			P.calc.stripeAssignments = setStripeAssignments(P.calc.rowgrid);
+			P.lookupParameters.stripeCount = P.calc.rowgrid.length;
+			P.calc.n = Math.min(P.calc.imagesToShow, P.order.length);
+		} else {
+			P.calc.stripeAssignments = optimizeSegmentationDynPro(P.calc.ratios, P.calc.nStripes);
+		}
+
 		calculateStripeParameters();
 		calculateStripePositions();
 		P.RT.show('calculate2');
@@ -805,7 +846,7 @@
 			P.log.write('pheighterr', 'msgerr');
 			return false;
 		}
-		if (!(P.calc.colcount > 0 || P.calc.targetWidth > 0)) {
+		if (!(P.calc.colcount > 0 || P.calc.targetWidth > 0 || P.calc.imagesToShow > 0)) {
 			P.log.write('pwidthmiss', 'msgerr');
 			return false;
 		}
@@ -826,6 +867,7 @@
 				dim: 'height', 
 				pos: 'top', 
 				key: 'col', 
+				grid: 'colgrid', 
 				target: 'targetHeight', 
 				canvas: 'canvasHeight', 
 				margin1: P.calc.margins.top, 
@@ -838,7 +880,15 @@
 			P.log.write('invalidhwc', 'msgerr');
 			return false;
 		}
-		P.calc.stripeAssignments = optimizeSegmentationDynPro(P.calc.ratios, P.calc.nStripes);
+		console.log('calculate3:', P.calc);
+		if (P.calc.colgrid) {
+			P.calc.stripeAssignments = setStripeAssignments(P.calc.colgrid);
+			P.lookupParameters.stripeCount = P.calc.colgrid.length;
+			P.calc.n = Math.min(P.calc.imagesToShow, P.order.length);
+		} else {
+			P.calc.stripeAssignments = optimizeSegmentationDynPro(P.calc.ratios, P.calc.nStripes);
+		}		
+
 		calculateStripeParameters();
 		calculateStripePositions();
 		P.RT.show('calculate3');
@@ -909,17 +959,28 @@
 			P.calc.ratios.push(ratio);
 			P.calc.pos.push({idx: idx, primOrig: P.pics[idx][X.P.dim], secOrig: P.pics[idx][X.S.dim], ratio: ratio, cumratio: P.calc.Rpics});
 		});
-		if (P.calc[X.P.target] > 0 && X.stripeCount > 0) {
+		if (P.calc[X.P.target] > 0 && P.calc[X.P.grid]) {
+			P.calc.nStripes = P.calc[X.P.grid].length;
+		} else if (P.calc[X.P.target] > 0 && X.stripeCount > 0) {
 			P.calc.nStripes = X.stripeCount;
-			P.RT.show('evaluateStripeRatios');
-			return true;
 		} else if (P.calc[X.P.target] > 0 && P.calc[X.S.target] > 0) {
 			P.calc.nStripes = limiter(Math.round(Math.sqrt(P.calc.Rpics * P.calc[X.S.target] / P.calc[X.P.target])), 1, P.calc.n);
-			P.RT.show('evaluateStripeRatios');
-			return true;
 		} else {
 			return false;
 		}
+		P.RT.show('evaluateStripeRatios');
+		return true;
+	}
+
+	function setStripeAssignments(grid) {
+//		Generate image assignment to stripe positions based on rowgrid or colgrid
+		P.RT.start('setStripeAssignments');
+		const out = []
+		grid.forEach((n, idx) => {
+			for (let i=0; i<n; i++) {out.push(idx);}
+		});
+		P.RT.show('setStripeAssignments');
+		return out;
 	}
 
 	function optimizeSegmentationDynPro(data, Nseg) {
@@ -990,7 +1051,8 @@
 		for (i=0; i<P.calc.nStripes; i++) {
 			nn=0; ww=0, rr=0.0;
 			P.calc.stripeImages[i] = [];
-			for (j=0; j<P.calc.stripeAssignments.length; j++) {
+			const jHI = Math.min(P.calc.stripeAssignments.length, P.calc.n);
+			for (j=0; j<jHI; j++) {
 				if (P.calc.stripeAssignments[j] == i) {
 					P.calc.stripeImages[i].push(j);
 					P.calc.pos[j].primKey = i;
@@ -1028,7 +1090,9 @@
 			});
 		}
 //		Positions
-		for (i=0; i<P.calc.pos.length; i++) {
+//		const iHI = Math.min(P.calc.stripeAssignments.length, P.calc.n);
+//		(i=0; i<P.calc.pos.length; i++)
+		for (i=0; i<P.calc.n; i++) {
 			if (!(P.calc.pos[i].primKey === lastStripe)) {
 				P0 = X.P.margin1;
 				S0 = P.calc.pos[i].primKey > 0 ? S0 + X.S.gap + P.calc.stripes[lastStripe].secSize : X.S.margin1;
@@ -1340,6 +1404,7 @@ class logmessage_manager {
 	constructor(message_element_or_id, options) {
 		this.options = Object.assign({
 			messages: false, 
+			console: false, 
 			timeout: 0, 
 			prefix: 'log-'
 		}, options);
@@ -1348,6 +1413,9 @@ class logmessage_manager {
 	}
 	write(content, cls='', tag='div') {
 		this.msgid++;
+		if (this.options.console) {
+			console.log('logmessage', this.msgid, '-', content, ':', this.getContent(content));
+		}
 		const id = this.options.prefix + this.msgid;
 		const cl = cls ? ' class="' + cls + '"' : '';
 		this.area.innerHTML = '<' + tag + cl + ' id="' + id + '">' + this.getContent(content) + '</' + tag + '>' + this.area.innerHTML;
@@ -1402,7 +1470,7 @@ class language_support {
 			'rowcounterr': {en: 'Illegal parameter row count', de: 'Unzulässiger Parameter bei Anzahl Zeilen'},
 			'illegalwha': {en: 'Illegal parameters for width, height or aspect', de: 'Unzulässige Parameter bei Einzelbild Breite, Höhe oder Seitenverhältnis'},
 			'pwiderr': {en: 'Invalid poster width', de: 'Unzulässige Poster-Breite'},
-			'pheighmiss': {en: 'Poster height or count of horizontal stripes are mandatory', de: 'Poster-Höhe oder Anzahl horizontaler Streifen müssen angegeben werden'},
+			'pheighmiss': {en: 'Poster height, count of horizontal stripes or images per row are mandatory', de: 'Poster-Höhe, Anzahl horizontaler Streifen oder Bilder pro Zeile müssen angegeben werden'},
 			'invalidwhc': {en: 'Invalid parameters for width, height or count of stripes', de: 'Unzulässige Parameter bei Breite, Höhe oder Anzahl Streifen'},
 			'pheighterr': {en: 'Invalid poster height', de: 'Unzulässige Poster-Höhe'},
 			'': {en: 'Poster width or count of vertical stripes are mandatory', de: 'Poster-Breite oder Anzahl vertikaler Streifen müssen angegeben werden'},

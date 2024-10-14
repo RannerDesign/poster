@@ -2,12 +2,11 @@
 
 **JavaScript Application for assembling multiple images into one poster**
 
-v2.1 2024-06-03 (c) RannerDesign, MIT License
+v2.2 2024-06-03 (c) RannerDesign, MIT License
 
 ## Objective
 
 Construction of an image file ("poster") in jpeg format, which is composed of several individual images. The individual images may have any aspect ratio. The combination is either done as a grid with a specified number of rows and columns or in the form of horizontal or vertical stripes, where the individual images are scaled to the same height or width.
-
 
 ## Requirements and Installation
 
@@ -124,7 +123,9 @@ This type of poster is well suited for images with very different aspect ratios.
 
 Portrait format images are somewhat "disadvantaged" as they have less area than landscape format images. The different strips can be of different heights as they are always scaled to make full use of the poster width.
 
-With this type of poster, only the **total width** of the poster can be specified exactly. The **height** can only be specified approximately, as space is required for adjustment in order to scale the stripes to the poster width and the associated height change. However, the height can also be omitted. In this case, the **number of horizontal stripes** must be specified. The height is then calculated.
+With this type of poster, only the **total width** of the poster can be specified exactly. The **height** can only be specified approximately, as space is required for adjustment in order to scale the stripes to the poster width and the associated height change. 
+
+However, the height can also be omitted. In this case, either the **number of horizontal stripes** must be specified or the **Images per Row**.  In the latter case a series of numbers is expected separated by commas or spaces or n * m meaning n rows with each m images. The height is then calculated.
 
 #### 3.3. Stripes Vertical
 
@@ -134,7 +135,9 @@ This type of poster is also well suited for images with very different aspect ra
 
 Landscape format images are somewhat "disadvantaged" as they have less area than portrait format images. The different stripes can be of different widths as they are always scaled to make full use of the poster height.
 
-With this type of poster, only the **total height** of the poster can be specified exactly. The **width** can only be specified approximately, as space is required for adjustment in order to scale the stripes to poster height and the associated change in width. However, the width can also be omitted. In this case, the **number of vertical stripes** must be specified. The width is then calculated.
+With this type of poster, only the **total height** of the poster can be specified exactly. The **width** can only be specified approximately, as space is required for adjustment in order to scale the stripes to poster height and the associated change in width.
+
+However, the width can also be omitted. In this case, either the **number of vertical stripes** must be specified or the **Images per Column**.  In the latter case a series of numbers is expected separated by commas or spaces or n * m meaning n columns with each m images. The width is then calculated.
 
 Which poster type is best for a given number of images is a matter of taste and can often only be found out by trial and error. Sometimes changing the order of the images can help to achieve a better effect.
 

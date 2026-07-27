@@ -1,36 +1,335 @@
 /*
 	poster.js
 	Poster Generator
-	2023-08-17 RannerDesign
-	Combine multiple images into one poster image and download jpg
-	v2.1.1	2024-06-01	New design with 3 structural options
-	v2.1.2	2024-06-19	Performance optimization
-	v2.1.4	2024-06-25	Stripe optimization by algorithm from fedja
-	v2.1.5	2024-06-27	Calculation no longer separate step
-	v2.1.6	2024-07-01	Bug fixes
-	v2.2.1	2024-10-12	Preset rows for stripes
+
+	The MIT License (MIT)
+
+	Copyright (c) 2014-2026 RannerDesign
+
+	Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+	The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 */
-	var EL, P, LOG;
-	document.addEventListener('DOMContentLoaded', posterInit);
-//	------------------------------------------------------------
+    const program_name = 'Poster Generator';
+	const program_version = '3.1.6';
+    const program_date = '2026-07-27';
+
+	var AUX, EL, P, LOG;
+
+//	============================================================
 //	Initialization
-//	------------------------------------------------------------
-	function posterInit() {
+//	============================================================
+	document.addEventListener('DOMContentLoaded', () => {
+		AUX = new auxiliaryHelpers();
 		P = {};
-		P.programVersion = 'Poster Generator v2.2.1';
-		P.lang = document.documentElement.lang ? document.documentElement.lang : 'en';
-		EL = getAllElementsWithID();
+		EL = {};
+		LOG = true;												// Enable console.log output
+		P.OS = getClientOS();
+		P.programVersion = program_name + ' v' + program_version;
+		P.lang = navigator.language.split('-')[0];
+		P.fonts = {};
+		P.fonts.currentFontFamilies = prepareDefaultFonts();
+		P.fonts.mode = 'default';
+		P.fonts.allFontsAvailable = 'queryLocalFonts' in window;
+		P.messages = new language_support({lang: P.lang}, setupLanguageTextElements());
+		buildPage();
+		loadLanguageText();
 		presetElements();
 		defineWaitCounters();
 		P.res = loadResources();
-		P.messages = new language_support({lang: P.lang});
-		P.messages.load(defineMessages());
-		LOG = true;										// Enable console.log output
 		P.RT = new runtime_measurement({console: true});
 		P.log = new logmessage_manager(EL.messagearea, {timeout: 60, console: true, messages: msgkey => {return P.messages.getmsg(msgkey);}});
-		P.uploader = new dnd_file_uploader('uploadfilearea', 'imgfile', monitorInput);
+		P.uploader = new dnd_file_uploader(EL.uploadfilearea, EL.imgfile, loadImage);
+		P.bguploader = new dnd_file_uploader(EL.uploadfilearea8, EL.bgimgfile, loadBGimage);
 		P.timeout = 500;
 		clearData();
+
+		P.log.write(P.programVersion + ' on ' + P.OS, 'msginfo');
+	});
+//	============================================================
+//	Page setup
+//	============================================================
+	function buildPage() {
+		const tsoptions1 = prepareToggleSwitch({divCSS: 'justify-self: center;'});
+		
+		EL = {};
+		EL.container = createChild('body', 'div', 'container');
+		EL.h0 = createChild(EL.container, 'h2', {langkey: ''});
+		EL.d0 = createChild(EL.container, 'div', 'topright');
+		EL.d1 = createChild(EL.d0, 'div');
+		EL.a1 = createChild(EL.d1, 'a', {href: P.lang == 'de' ? 'poster_help_de.html' : 'poster_help_en.html', target: '_blank', class: 'helpbutton', langkey: ''});
+		EL.d2 = createChild(EL.d0, 'div');
+		EL.l_language = createChild(EL.d2, 'div', {style: 'font-size: 12px;', langkey: ''});
+		EL.language = createChild(EL.d2, 'select', {name: 'language'});
+		EL.language.addEventListener('change', changeLanguage);
+		createChild(EL.language, 'option', {value: ''});
+		P.messages.options.supportedLanguages.forEach((lang) => {
+			createChild(EL.language, 'option', '', lang);
+		});
+
+//		Section1: Load images
+		EL.h2 = createChild(EL.container, 'h4', {langkey: ''});
+		EL.c1 = createChild(EL.container, 'div', 'flexblocks');
+		EL.uploadfilearea = createChild(EL.c1, 'div', 'uploadfilearea');
+		EL.c2 = createChild(EL.uploadfilearea, 'div', 'droparea');
+		EL.j1 = createChild(EL.c2, 'label', {for: 'imgfile', langkey: ''});
+		EL.imgfile = createChild(EL.c2, 'input', {type: 'file', id: 'imgfile', style: 'display: none', multiple: true});
+		EL.waiticon = createChild(EL.c1, 'div', 'waiticon');
+		EL.waitcount = createChild(EL.c1, 'div', 'counter');
+		EL.b3 = createChild(EL.c1, 'button', {type: 'button', langkey: ''});
+		EL.b3.addEventListener('click', clearData);
+
+//		Section2: Poster Type
+		EL.h3 = createChild(EL.container, 'h4', {langkey: ''});
+		EL.c3 = createChild(EL.container, 'div', 'flexblocks');
+		EL.pt1 = createChild(EL.c3, 'button', {type: 'button', langkey: ''});
+		EL.pt1.addEventListener('click', () => setPosterType(1));
+		EL.pt2 = createChild(EL.c3, 'button', {type: 'button', langkey: ''});
+		EL.pt2.addEventListener('click', () => setPosterType(2));
+		EL.pt3 = createChild(EL.c3, 'button', {type: 'button', langkey: ''});
+		EL.pt3.addEventListener('click', () => setPosterType(3));
+		
+//		Section 3: Output format
+		EL.h4 = createChild(EL.container, 'h4', {langkey: ''});
+		EL.c4 = createChild(EL.container, 'div', 'flexblocks');
+		EL.ot1 = createChild(EL.c4, 'button', {type: 'button', langkey: ''});
+		EL.ot1.addEventListener('click', () => setOutputType(1));
+		EL.ot2 = createChild(EL.c4, 'button', {type: 'button', langkey: ''});
+		EL.ot2.addEventListener('click', () => setOutputType(2));
+
+//		Section 4: Poster Parameters
+		EL.h5 = createChild(EL.container, 'h4', {langkey: ''});
+
+//		pp1
+		EL.pp1 = createChild(EL.container, 'div');
+		EL.g1 = createChild(EL.pp1, 'div', 'grid2');
+		EL.colcount1 = createChild(EL.g1, 'input', {type: 'text'});
+		EL.l_colcount1 = createChild(EL.g1, 'label', {langkey: ''});
+		EL.rowcount1 = createChild(EL.g1, 'input', {type: 'text'});
+		EL.l_rowcount1 = createChild(EL.g1, 'label', {langkey: ''});
+		EL.singleWidth1 = createChild(EL.g1, 'input', {type: 'text'});
+		EL.l_singleWidth1 = createChild(EL.g1, 'label', {langkey: ''});
+		EL.singleHeight1 = createChild(EL.g1, 'input', {type: 'text'});
+		EL.l_singleHeight1 = createChild(EL.g1, 'label', {langkey: ''});
+		EL.aspect1 = createChild(EL.g1, 'input', {type: 'text'});
+		EL.l_aspect1 = createChild(EL.g1, 'label', {langkey: ''});
+		createChild(EL.g1, 'div');
+		EL.l_crop1 = createChild(EL.g1, 'label', {langkey: ''});
+		EL.fit11 = createChild(EL.g1, 'input', {id: 'fit11', name: 'fit1', type: 'radio', value: 'contain'});
+		EL.l_fit11 = createChild(EL.g1, 'label', {for: 'fit11', langkey: ''});
+		EL.fit12 = createChild(EL.g1, 'input', {id: 'fit12', name: 'fit1', type: 'radio', value: 'fill'});
+		EL.l_fit12 = createChild(EL.g1, 'label', {for: 'fit12', langkey: ''});
+		EL.fit13 = createChild(EL.g1, 'input', {id: 'fit13', name: 'fit1', type: 'radio', value: 'cover'});
+		EL.l_fit13 = createChild(EL.g1, 'label', {for: 'fit13', langkey: ''});
+
+//		pp2
+		EL.pp2 = createChild(EL.container, 'div');
+		EL.g2 = createChild(EL.pp2, 'div', 'grid2');
+		EL.targetWidth2 = createChild(EL.g2, 'input', {type: 'text'});
+		EL.l_targetWidth2 = createChild(EL.g2, 'label', {langkey: ''});
+		EL.targetHeight2 = createChild(EL.g2, 'input', {type: 'text'});
+		EL.l_targetHeight2 = createChild(EL.g2, 'label', {langkey: ''});
+		EL.rowcount2 = createChild(EL.g2, 'input', {type: 'text'});
+		EL.l_rowcount2 = createChild(EL.g2, 'label', {langkey: ''});
+		EL.rowgrid2 = createChild(EL.g2, 'input', {type: 'text'});
+		EL.l_rowgrid2 = createChild(EL.g2, 'label', {langkey: ''});
+
+//		pp3
+		EL.pp3 = createChild(EL.container, 'div');
+		EL.g3 = createChild(EL.pp3, 'div', 'grid2');
+		EL.targetHeight3 = createChild(EL.g3, 'input', {type: 'text'});
+		EL.l_targetHeight3 = createChild(EL.g3, 'label', {langkey: ''});
+		EL.targetWidth3 = createChild(EL.g3, 'input', {type: 'text'});
+		EL.l_targetWidth3 = createChild(EL.g3, 'label', {langkey: ''});
+		EL.colcount3 = createChild(EL.g3, 'input', {type: 'text'});
+		EL.l_colcount3 = createChild(EL.g3, 'label', {langkey: ''});
+		EL.colgrid3 = createChild(EL.g3, 'input', {type: 'text'});
+		EL.l_colgrid3 = createChild(EL.g3, 'label', {langkey: ''});
+
+//		pp0
+		EL.pp0 = createChild(EL.container, 'div');
+		EL.g0 = createChild(EL.pp0, 'div', 'grid2');
+		EL.margins = createChild(EL.g0, 'input', {type: 'text'});
+		EL.l_margins = createChild(EL.g0, 'label', {langkey: ''});
+		EL.gaps = createChild(EL.g0, 'input', {type: 'text'});
+		EL.l_gaps = createChild(EL.g0, 'label', {langkey: ''});
+		EL.bgcol = createChild(EL.g0, 'input', {type: 'color'});
+		EL.l_bgcol = createChild(EL.g0, 'label', {langkey: ''});
+		EL.bgimg = buildToggleSwitch(EL.g0, tsoptions1);
+		EL.l_bgimg = createChild(EL.g0, 'label', {langkey: ''});
+		EL.bgimg.addEventListener('change', toggleBackgroundImage);
+		EL.imcap = buildToggleSwitch(EL.g0, tsoptions1);
+		EL.l_imcap = createChild(EL.g0, 'label', {langkey: ''});
+		EL.imcap.addEventListener('change', toggleImageTitles);
+		createChild(EL.g0, 'div');
+		EL.l_singleimage = createChild(EL.g0, 'label', {langkey: ''});
+		EL.borderwidth = createChild(EL.g0, 'input', {type: 'text'});
+		EL.l_borderwidth = createChild(EL.g0, 'label', {langkey: ''});
+		EL.borderdash = createChild(EL.g0, 'input', {type: 'text', class: 'modeCanvas'});
+		EL.l_borderdash = createChild(EL.g0, 'label', {class: 'modeCanvas', langkey: ''});
+		EL.borderstyle = createChild(EL.g0, 'select', {name: 'borderstyle', class: 'modeHTML'});
+		EL.borderstyle1 = createChild(EL.borderstyle, 'option', {value: '', langkey: ''});
+		EL.borderstyle2 = createChild(EL.borderstyle, 'option', {value: 'solid', langkey: ''});
+		EL.borderstyle3 = createChild(EL.borderstyle, 'option', {value: 'dotted', langkey: ''});
+		EL.borderstyle4 = createChild(EL.borderstyle, 'option', {value: 'dashed', langkey: ''});
+		EL.borderstyle5 = createChild(EL.borderstyle, 'option', {value: 'double', langkey: ''});
+		EL.borderstyle6 = createChild(EL.borderstyle, 'option', {value: 'groove', langkey: ''});
+		EL.borderstyle7 = createChild(EL.borderstyle, 'option', {value: 'ridge', langkey: ''});
+		EL.borderstyle8 = createChild(EL.borderstyle, 'option', {value: 'inset', langkey: ''});
+		EL.borderstyle9 = createChild(EL.borderstyle, 'option', {value: 'outset', langkey: ''});
+		EL.l_borderstyle = createChild(EL.g0, 'label', {class: 'modeHTML', langkey: ''});
+		EL.bordercolor = createChild(EL.g0, 'input', {type: 'color'});
+		EL.l_bordercolor = createChild(EL.g0, 'label', {langkey: ''});
+		EL.corner = createChild(EL.g0, 'input', {type: 'text'});
+		EL.l_corner = createChild(EL.g0, 'label', {langkey: ''});
+		EL.postername = createChild(EL.g0, 'input', {type: 'text'});
+		EL.l_postername = createChild(EL.g0, 'label', {langkey: ''});
+		EL.filetype = createChild(EL.g0, 'select', {name: 'filetype', class: 'center bold'});
+		buildSelectOptions(EL.filetype, ['jpg', 'png']);
+		EL.l_filetype = createChild(EL.g0, 'label', {langkey: ''});
+		EL.quality = createChild(EL.g0, 'input', {type: 'text'});
+		EL.l_quality = createChild(EL.g0, 'label', {langkey: ''});
+
+//		pp8: Background image
+		EL.pp8 = createChild(EL.container, 'div', {class: 'optarea', style: 'display: none;'});
+		EL.h8 = createChild(EL.pp8, 'h4', {langkey: 'l_bgimg'});
+		EL.c8 = createChild(EL.pp8, 'div', 'flexblocks');
+		EL.uploadfilearea8 = createChild(EL.c8, 'div', 'uploadfilearea');
+		EL.c81 = createChild(EL.uploadfilearea8, 'div', 'droparea');
+		EL.j81 = createChild(EL.c81, 'label', {for: 'bgimgfile', langkey: ''});
+		EL.bgimgfile = createChild(EL.c81, 'input', {type: 'file', id: 'bgimgfile', style: 'display: none', multiple: false});
+		EL.c82 = createChild(EL.c8, 'div', 'bgthumb');
+		EL.c83 = createChild(EL.c8, 'div', 'bgmeta');
+		EL.g8 = createChild(EL.pp8, 'div', 'grid2');
+		EL.bgimgtransform = createChild(EL.g8, 'select', {name: 'bgimgtransform'});
+		EL.bgimgtransform1 = createChild(EL.bgimgtransform, 'option', {value: 'contain', langkey: ''});
+		EL.bgimgtransform2 = createChild(EL.bgimgtransform, 'option', {value: 'fill', langkey: ''});
+		EL.bgimgtransform3 = createChild(EL.bgimgtransform, 'option', {value: 'cover', langkey: ''});
+		EL.l_bgimgtransform = createChild(EL.g8, 'label', {langkey: ''});
+		EL.bgimgpos = createChild(EL.g8, 'input', {type: 'text'});
+		EL.l_bgimgpos = createChild(EL.g8, 'label', {langkey: ''});
+		EL.bgimgopacity = createChild(EL.g8, 'input', {type: 'text'});
+		EL.l_bgimgopacity = createChild(EL.g8, 'label', {langkey: ''});
+
+//		pp9: Image captions
+		EL.pp9 = createChild(EL.container, 'div', {class: 'optarea', style: 'display: none;'});
+		EL.h9 = createChild(EL.pp9, 'h4', {langkey: 'l_imcap'});
+		EL.g9 = createChild(EL.pp9, 'div', 'grid2');
+		EL.titlefontfamily = createChild(EL.g9, 'select', {name: 'titlefontfamily'});
+		prepareFontSelection();
+		if (P.fonts.allFontsAvailable) {
+			EL.c9 = createChild(EL.g9, 'div');
+			EL.l_titlefontfamily = createChild(EL.c9, 'label', {langkey: ''});
+			EL.togglefont = createChild(EL.c9, 'label', {class: 'togglefont', langkey: 'fontmodedefault'});
+			EL.togglefont.addEventListener('click', toggleFontMode);
+		} else {
+			EL.l_titlefontfamily = createChild(EL.g9, 'label', {langkey: ''});
+		}
+		EL.titlefontsize = createChild(EL.g9, 'input', {type: 'text'});
+		EL.l_titlefontsize = createChild(EL.g9, 'label', {langkey: ''});
+		EL.titlecolor = createChild(EL.g9, 'input', {type: 'color'});
+		EL.l_titlecolor = createChild(EL.g9, 'label', {langkey: ''});
+		EL.titlecolorstroke = createChild(EL.g9, 'input', {type: 'color'});
+		EL.l_titlecolorstroke = createChild(EL.g9, 'label', {langkey: ''});
+		EL.titlestrokewidth = createChild(EL.g9, 'input', {type: 'text'});
+		EL.l_titlestrokewidth = createChild(EL.g9, 'label', {langkey: ''});
+		EL.titleusefilename = buildToggleSwitch(EL.g9, tsoptions1);
+		EL.l_titleusefilename = createChild(EL.g9, 'label', {langkey: ''});
+		createChild(EL.g9, 'div');
+		EL.l_titlepos = createChild(EL.g9, 'label', {langkey: ''});
+		EL.titleimageanchor = createChild(EL.g9, 'input', {type: 'text'});
+		EL.l_titleimageanchor = createChild(EL.g9, 'label', {langkey: ''});
+		EL.titletextanchor = createChild(EL.g9, 'input', {type: 'text'});
+		EL.l_titletextanchor = createChild(EL.g9, 'label', {langkey: ''});
+		EL.titledistances = createChild(EL.g9, 'input', {type: 'text'});
+		EL.l_titledistances = createChild(EL.g9, 'label', {langkey: ''});
+		EL.titleangle = createChild(EL.g9, 'input', {type: 'text'});
+		EL.l_titleangle = createChild(EL.g9, 'label', {langkey: ''});
+
+//		Section 5: Generate Poster
+		EL.h6 = createChild(EL.container, 'h4', {langkey: ''});
+		EL.c6 = createChild(EL.container, 'div', 'flexblocks');
+		EL.pw2 = createChild(EL.c6, 'button', {type: 'button', langkey: ''});
+		EL.pw2.addEventListener('click', makePoster);
+		EL.waitcanvas = createChild(EL.c6, 'div', 'waiticon');
+		EL.pw4 = createChild(EL.c6, 'div');
+
+//		Containers at the end
+		EL.version = createChild(EL.container, 'div', 'programversion');
+		EL.version.addEventListener('click', toggleDebugInfo);
+		EL.messagearea = createChild(EL.container, 'div', 'messagearea');
+		EL.inputlist = createChild(EL.container, 'div', 'inputlist');
+		EL.filelist = createChild(EL.container, 'div', 'filelist');
+		EL.debuginfo = createChild(EL.container, 'div', 'debuginfo');
+	}
+
+	function loadLanguageText() {
+		for (const [name, ele] of Object.entries(EL)) {
+			try {
+				if (ele.hasAttribute('langkey')) {
+					if (ele.getAttribute('langkey') == '') {
+						ele.innerHTML = P.messages.getmsg(name);
+					} else {
+						ele.innerHTML = P.messages.getmsg(ele.getAttribute('langkey'));
+					}
+				}
+			} catch(error) {
+				console.warn('loadLanguageText failure:', error);
+				console.log('loadLanguageText - name, ele:', name, ele);
+			}
+		}
+	}
+
+	function changeLanguage() {
+		if (EL.language.value) {
+			P.messages.setLanguage(EL.language.value);
+			loadLanguageText();
+			EL.a1.href = P.messages.options.lang == 'de' ? 'poster_help_de.html' : 'poster_help_en.html';
+		}
+	}
+
+	function prepareFontSelection() {
+		EL.titlefontfamily.innerHTML = '';
+		EL.titlefontfamily0 = createChild(EL.titlefontfamily, 'option', {value: '', langkey: ''}, P.messages.getmsg('titlefontfamily0'));
+		buildSelectOptions(EL.titlefontfamily, P.fonts.currentFontFamilies);
+	}
+
+	function prepareDefaultFonts() {
+		return [
+			"Arial",
+			"Verdana",
+			"Times New Roman",
+			"Georgia",
+			"Courier New",
+			"Trebuchet MS",
+			"Tahoma",
+			"Comic Sans MS",
+			"sans-serif",
+			"serif",
+			"monospace"
+		];
+	}
+
+	async function toggleFontMode() {
+		if (P.fonts.mode == 'default') {
+			try {
+				P.fonts.localFonts = await window.queryLocalFonts();
+				P.fonts.currentFontFamilies = [...new Set(P.fonts.localFonts.map(f => f.family))].sort();
+				P.fonts.mode = 'allfonts';
+				EL.togglefont.innerHTML = P.messages.getmsg('fontmodeall');
+				prepareFontSelection();
+			} catch (err) {
+				console.warn('queryLocalFonts available but local font access failed:', err);
+			}
+		} else {
+			P.fonts.currentFontFamilies = prepareDefaultFonts();
+			P.fonts.mode = 'default';
+			EL.togglefont.innerHTML = P.messages.getmsg('fontmodedefault');
+			prepareFontSelection();
+		}
 	}
 
 	function presetElements() {
@@ -62,6 +361,106 @@
 		EL.borderstyle.value = '';
 		EL.bordercolor.value = '#000000';
 		EL.corner.value = '';
+		EL.filetype.value = ['iOS', 'iPadOS'].includes(P.OS) ? 'png' : 'jpg'; 
+
+		hideElements(EL.g8);
+		EL.bgimgpos.value = 'CM';
+		EL.bgimgopacity.value = '1';
+
+		EL.titlefontfamily.value = 'sans-serif';
+		EL.titlefontsize.value = '16';
+		EL.titlecolor.value = '#000000';
+		EL.titlecolorstroke.value = '#7f7f7f';
+		EL.titlestrokewidth.value = '3';
+		EL.titleimageanchor.value = validateUserInput('position', 'CB')[0];
+		EL.titletextanchor.value = validateUserInput('position', 'CT')[0];
+	}
+
+	function toggleBackgroundImage() {
+		EL.pp8.style.display = EL.bgimg.checked ? 'block' : 'none';
+	}
+
+	function toggleImageTitles() {
+		EL.pp9.style.display = EL.imcap.checked ? 'block' : 'none';
+	}
+
+	function toggleDebugInfo() {
+		if (EL.debuginfo.innerHTML == '') {
+			createChild(EL.debuginfo, 'h2', '', 'Debug Information');
+			createChild(EL.debuginfo, 'h4', '', 'Navigator');
+			createChild(EL.debuginfo, 'pre', '', JSON.stringify(dumpVavigatorSelected(), null, 2));
+		} else {
+			EL.debuginfo.innerHTML = '';
+		}
+	}
+
+	function dumpVavigatorSelected() {
+		const navigatorInfo = {};
+		const selectedProperties = ['vendorSub', 'productSub', 'vendor', 'maxTouchPoints', 'scheduling', 'userActivation', 'geolocation', 'doNotTrack', 'webkitTemporaryStorage', 'webkitPersistentStorage', 'windowControlsOverlay', 'hardwareConcurrency', 'cookieEnabled', 'appCodeName', 'appName', 'appVersion', 'platform', 'product', 'userAgent', 'userAgentData', 'language', 'languages', 'onLine', 'webdriver', 'pdfViewerEnabled', 'connection'];
+		selectedProperties.forEach((item) => {
+			try {
+				navigatorInfo[item] = navigator[item];
+			} catch(err) {
+				navigatorInfo[item] = 'error: ' + err.message;
+			}
+		});
+		return navigatorInfo;
+	}
+
+	function dumpNavigatorAll() {
+		const out = {};
+
+		function safeClone(value, depth = 2, seen = new WeakSet()) {
+			if (value === null || typeof value !== "object") return value;
+			if (seen.has(value)) return "[Circular]";
+			seen.add(value);
+
+			if (depth <= 0) return "[Object]";
+
+			const clone = Array.isArray(value) ? [] : {};
+			for (const key of Object.getOwnPropertyNames(value)) {
+				try {
+					const v = value[key];
+					clone[key] =
+					v && typeof v === "object"
+					? safeClone(v, depth - 1, seen)
+					: v;
+				} catch (err) {
+					clone[key] = `[unavailable: ${err.message}]`;
+				}
+			}
+			return clone;
+		}
+
+		for (const key of Object.getOwnPropertyNames(Navigator.prototype)
+		.concat(Object.getOwnPropertyNames(navigator))) {
+			if (key in out) continue;
+
+			try {
+				const value = navigator[key];
+
+//				Keep primitives directly
+				if (
+				value === null ||
+				["string", "number", "boolean", "undefined"].includes(typeof value)
+				) {
+					out[key] = value;
+				} else if (Array.isArray(value)) {
+					out[key] = value.slice();
+				} else if (typeof value === "object") {
+//					Try to make nested objects readable
+					out[key] = safeClone(value);
+				} else if (typeof value === "function") {
+//					Skip functions unless you want their names
+					out[key] = `[Function ${value.name || "anonymous"}]`;
+				}
+			} catch (err) {
+				out[key] = `[unavailable: ${err.message}]`;
+			}
+		}
+		console.log(out);
+		console.log(JSON.stringify(out, null, 2));
+		return out;
 	}
 
 	function defineWaitCounters() {
@@ -93,17 +492,12 @@
 		out.svg.wastebasket = URL.createObjectURL(blob);
 		return out;
 	}
-//	------------------------------------------------------------
-//	Button: Delete photo selection
-//	------------------------------------------------------------
-	function clearInput() {
-		EL.imgfile.value = '';
-		monitorInput();
-	}
-//	------------------------------------------------------------
+
+//	============================================================
 //	Button: Load images
-//	------------------------------------------------------------
+//	============================================================
     function loadImage() {
+		P.waitload.clear();
 		const nPics2load = EL.imgfile.files.length;
 		if (nPics2load < 1) {
 			P.log.write('noimgsel', 'msgerr');
@@ -111,40 +505,140 @@
 		}
 		let nPic = P.pics.length;
 		Array.from(EL.imgfile.files).forEach(inputfile => {
-			if (LOG) {console.log('loadImage - inputfile', inputfile);}
-			P.waitload.ON();
+			logConsole('loadImage - inputfile', inputfile);
 			let idx = 0 + nPic++;
-			P.pics[idx] = {file: inputfile};
+			P.pics[idx] = {};
 			P.order.push(idx);
+			imageLoaderAndConverter(inputfile, P.pics[idx]);
+		});
+		EL.imgfile.value = '';
+    }
+
+	async function getImageMetadata(fileBuffer, params) {
+		try {
+			const tags = await ExifReader.load(fileBuffer, {expanded: true});
+			logConsole('getImageMetadata - tags', tags);
+			params.title = selectImageTitle(tags);
+			return true;
+		} catch(error) {
+			console.warn('getImageMetadata - error:', error.message);
+			return false;
+		}
+	}
+
+	function selectImageTitle(exifReaderTags) {
+		let tags = exifReaderTags;
+		if (isObject(tags)) {
+			tags = exifReaderTags.iptc;
+			if (isObject(tags)) {
+				if ('Object Name' in tags) {return tags['Object Name'].description;}
+				if ('Headline' in tags) {return tags['Headline'].description;}
+				if ('Caption' in tags) {return tags['Caption'].description;}
+				if ('Caption/Abstract' in tags) {return tags['Caption/Abstract'].description;}
+			}
+			tags = exifReaderTags.exif;
+			if (isObject(tags)) {
+				if ('ImageDescription' in tags) {return tags['ImageDescription'].description;}
+			}
+		}
+		return '';
+	}
+
+	function loadBGimage() {
+		P.waitload.clear();
+		P.bgimage = {pic: {}};
+		cleanElements(EL.c82, EL.c83);
+		hideElements(EL.g8);
+		if (EL.bgimgfile.files.length < 1) {
+			P.log.write('noimgsel', 'msgerr');
+			return false;
+		}
+		imageLoaderAndConverter(EL.bgimgfile.files[0], P.bgimage.pic, (params) => {
+			EL.bgthumb = EL.c82.appendChild(params.image.cloneNode(true));
+			displayImageMetadata(EL.c83, params);
+			showElements(EL.g8);
+		});
+	}
+
+	function imageLoaderAndConverter(inputfile, params, callback=false) {
+		P.waitload.ON();
+		params.file = inputfile;
+
+		const loadIntoImage = (blobOrFile) => {
+			logConsole('imageLoaderAndConverter - blobOrFile', blobOrFile);
 			const fr = new FileReader();
-			fr.onload = e => {
-				if (LOG) {console.log('FileReader loaded - fr', fr);}
+			fr.onload = async (e) => {
+				logConsole('FileReader loaded - fr', fr);
 				const img = new Image();
 				img.onload = e => {
-					if (LOG) {console.log('Image loaded - img.length', img.src.length);}
+					logConsole('Image loaded - img.length', img.src.length);
 					if (img.width > 0 && img.height > 0) {
-						P.pics[idx].image = img;
-						P.pics[idx].width = img.width;
-						P.pics[idx].height = img.height;
-						P.pics[idx].ratio = img.width / img.height;
-//						if (LOG) {console.log('Image loaded - P.pics[idx]', P.pics[idx]);}
+						params.image = img;
+						params.width = img.width;
+						params.height = img.height;
+						params.ratio = img.width / img.height;
+						if (callback) {callback(params);}
 					} else {
-						P.pics[idx].image = false;
+						params.image = false;
 						P.log.write('zerowh', 'msgerr');
-						console.warn('loadImage - Empty image not loaded - idx, img', idx, img);
+						console.warn('loadImage - Empty image not loaded - params', params);
 					}
 					P.waitload.OFF();
 				};
+				img.onerror = e => {
+					params.image = false;
+					P.log.write('imgloaderr', 'msgerr');
+					console.warn('loadImage - Image failed to load - params', params);
+					P.waitload.OFF();
+				};
+				getImageMetadata(fr.result, params);
 				img.src = fr.result;
 			};
-			fr.readAsDataURL(inputfile);
-		});
-		EL.imgfile.value = '';
-		monitorInput();
-    }
-//	------------------------------------------------------------
+			fr.onerror = e => {
+				params.image = false;
+				P.log.write('filereaderr', 'msgerr');
+				console.warn('loadImage - FileReader failed - params, blobOrFile', params, blobOrFile);
+				P.waitload.OFF();
+			};
+			fr.readAsDataURL(blobOrFile);
+		};
+
+		(async () => {
+			try {
+				const isHeic = await HeicTo.isHeic(inputfile);
+				if (isHeic) {
+					logConsole('HEIC conversion started for', inputfile.name);
+					const convertedBlob = await HeicTo({
+						blob: inputfile,
+						type: 'image/jpeg',
+						quality: P.calc.quality
+					});
+					loadIntoImage(convertedBlob);
+				} else {
+					loadIntoImage(inputfile);
+				}
+			} catch (err) {
+				P.log.write('heicfail', 'msgerr');
+				console.error('loadImage - HEIC detection/conversion failed - inputfile, err', inputfile, err);
+				params.image = false;
+				P.waitload.OFF();
+			}
+		})();
+
+	}
+
+	function displayImageMetadata(container, params) {
+		const block = createChild(container, 'div', 'imgmetadata');
+		createChild(block, 'div', '', params.file.name);
+		createChild(block, 'div', '', formatTS(params.file.lastModified));
+		createChild(block, 'div', '', formatINT(params.file.size) + ' Bytes');
+		createChild(block, 'div', '', params.title);
+		createChild(block, 'div', '', formatINT(params.width) + ' * ' + formatINT(params.height) + ' Pixel (B * H)');
+	}
+
+//	============================================================
 //	Button: Delete loaded images
-//	------------------------------------------------------------
+//	============================================================
 	function clearData() {
 		P.order = [];
 		P.pics = [];
@@ -153,11 +647,10 @@
 		P.waitload.clear();
 		EL.filelist.innerHTML = '';
 		P.log.clear();
-		monitorInput();
 	}
-//	------------------------------------------------------------
+//	============================================================
 //	Button: Poster type
-//	------------------------------------------------------------
+//	============================================================
 	function setPosterType(type) {
 		const oldType = P.posterType;
 		switch (type) {
@@ -198,12 +691,16 @@
 				EL.pt3.style.background = '#bfbfbf';
 				break;
 		}
-		if (P.posterType != oldType) {P.calc = {};}
+		if (P.posterType != oldType) {
+			P.calc = {};
+			removeDownloadLink();
+		}
 	}
-//	------------------------------------------------------------
+//	============================================================
 //	Button: Output type
-//	------------------------------------------------------------
+//	============================================================
 	function setOutputType(type) {
+		const oldType = P.outputType;
 		switch (type) {
 			case 1:
 				P.outputType = 1;
@@ -224,12 +721,15 @@
 				document.querySelectorAll('.modeCanvas').forEach(ele => {ele.style.display = 'none';});
 				break;
 		}
+		if (P.outputType != oldType) {removeDownloadLink();}
 	}
-//	------------------------------------------------------------
+//	============================================================
 //	Button: Generate poster
-//	------------------------------------------------------------
+//	============================================================
 	function makePoster() {
+		removeDownloadLink();
 		if (!calculate()) {return false;}
+		P.waitcanvas.clear();
 		P.waitcanvas.ON();
 		P.RT.start('makePoster');
 		if (P.calc.postername) {
@@ -260,9 +760,10 @@
 	}
 
 	function makeCanvas() {
+		logConsole('... starting makeCanvas ...');
 		let border;
-		P.calc.windowWidth = P.calc.canvasWidth + 6;			// adjustment by
-		P.calc.windowHeight = P.calc.canvasHeight - 10;			// trial and error
+		P.calc.windowWidth = P.calc.canvasWidth + 16;			// adjustment by
+		P.calc.windowHeight = P.calc.canvasHeight + 10;			// trial and error
 		P.canwindow = createWindow(P.posterWindowName, 
 			'<title>Poster Ansicht</title>', 
 			'<canvas id="canvas"></canvas>', {
@@ -282,6 +783,7 @@
 		EL.ctx = EL.canvas.getContext("2d");
 		EL.ctx.fillStyle = P.calc.bgcol;
 		EL.ctx.fillRect(0, 0, EL.canvas.width, EL.canvas.height);
+		if (P.calc.bgimg) {drawBackgroundImageOnCanvas(EL.ctx, P.bgimage?.pic);}
 		EL.filelist.innerHTML = '';
 		P.calc.pos.forEach((item, ipos) => {
 			if (ipos < P.calc.n) {
@@ -306,13 +808,19 @@
 				}				
 			}
 		});
+		
+		if (P.calc.imcap) {drawCaptionsOnCanvas(EL.ctx);}
+		
+		createDownloadLink(EL.canvas, P.posterWindowName);
+		
 		return true;
 	}
 
 	function makeNoCanvas() {
+		logConsole('... starting makeNoCanvas ...');
 		let divele, imgele, picnum = 1;
-		P.calc.windowWidth = P.calc.canvasWidth + 6;			// adjustment by
-		P.calc.windowHeight = P.calc.canvasHeight - 10;			// trial and error
+		P.calc.windowWidth = P.calc.canvasWidth + 16;			// adjustment by
+		P.calc.windowHeight = P.calc.canvasHeight + 10;			// trial and error
 		P.nocanWindow = createWindow(P.posterWindowName, 
 			'', 
 			'<div id="nocanvas"></div>', {
@@ -354,6 +862,7 @@
 		EL.nocanvas.style.height = P.calc.canvasHeight;
 		EL.nocanvas.style.backgroundColor  = P.calc.bgcol;
 		EL.nocanvas.style.position  = 'relative';
+		if (P.calc.bgimg) {drawBackgroundImageOnDiv(EL.nocanvas, P.bgimage?.pic);}
 		EL.filelist.innerHTML = '';
 		P.calc.pos.forEach((item, ipos) => {
 			if (ipos < P.calc.n) {
@@ -375,9 +884,66 @@
 				if (P.calc.cornerCSS) {imgele.style.borderRadius = P.calc.cornerCSS;}				
 			}
 		});
+		
+		if (P.calc.imcap) {drawCaptionsOnDiv(EL.nocanvas);}
+		
 		HTelementChild(P.nocanWindow.document.body, 'div', '', {}, {id: 'modalPic', class: 'modimg'});
 		HTelementChild(P.nocanWindow.document.body, 'script', "document.body.addEventListener('keydown', keyAction);");
+
+		createDownloadLink(EL.nocanvas, P.posterWindowName);
+
 		return true;
+	}
+
+	function removeDownloadLink() {
+		EL.pw4.innerHTML = '';
+	}
+
+	function createDownloadLink(poster, filebasename) {
+		function buildDownloadLink(dataURL, filename) {
+			removeDownloadLink();
+			EL.downloadlink = createChild(EL.pw4, 'a', {href: dataURL, download: filename, class: 'buttonlink', langkey: 'pw3'}, P.messages.getmsg('pw3'));
+		}
+
+		switch (P.outputType) {
+			case 1:
+				logConsole('... starting render - canvas:', poster);
+				switch (P.calc.filetype) {
+					case 'png':
+						poster.toBlob((blob) => {
+							buildDownloadLink(URL.createObjectURL(blob), filebasename + '.png')
+						});
+						break;
+					default:
+						buildDownloadLink(poster.toDataURL('image/jpeg', P.calc.quality), filebasename + '.jpg');
+				}
+				return 'makeCanvas';
+			case 2:
+				logConsole('... starting render - node:', poster);
+				switch (P.calc.filetype) {
+					case 'png':
+						domtoimage.toBlob(poster)
+						.then(blob => {
+							buildDownloadLink(URL.createObjectURL(blob), filebasename + '.png');
+						})
+						.catch(error => {
+							console.error('domtoimage.toBlob - errormessage:', error);
+						});
+						break;
+					default:
+						domtoimage.toJpeg(poster, {quality: P.calc.quality })
+						.then(dataUrl => {
+							buildDownloadLink(dataUrl, filebasename + '.jpg');
+						})
+						.catch(error => {
+							console.error('domtoimage.toJpeg - errormessage:', error);
+						});
+				}
+				return 'makeNoCanvas';
+			default:
+				P.log.write('nothingtodownload', 'msgerr');
+				return false;
+		}
 	}
 
 	function canvasBorderWithRoundedCorners(left, top, width, height, radius) {
@@ -403,6 +969,330 @@
 		} else {
 			return [];
 		}
+	}
+
+	function drawBackgroundImageOnCanvas(ctx, bgimage) {
+		if (!ctx || !bgimage || !bgimage.image || !bgimage.width || !bgimage.height) return;
+
+		const canvasWidth  = P.calc.canvasWidth  || ctx.canvas.width;
+		const canvasHeight = P.calc.canvasHeight || ctx.canvas.height;
+		const img = bgimage.image;
+
+//		Check whether the image is ready / usable
+		const validImage =
+		(img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) ||
+		(img instanceof HTMLCanvasElement && img.width > 0 && img.height > 0) ||
+		(img instanceof ImageBitmap) ||
+		(img instanceof HTMLVideoElement && img.readyState >= 2);
+		if (!validImage) return;
+
+		const oldAlpha = ctx.globalAlpha;
+		const oldSmoothing = ctx.imageSmoothingEnabled;
+		ctx.save();
+
+//		Opacity
+		ctx.globalAlpha = P.calc.bgimgopacity;
+
+		const mode = P.calc.bgimgtransform || "contain";
+		const pos = String(P.calc.bgimgpos || "CM").toUpperCase();
+		const hPos = pos[0] || "C";
+		const vPos = pos[1] || "M";
+		const iw = bgimage.width;
+		const ih = bgimage.height;
+
+		function alignX(dw) {
+			if (hPos === "L") return 0;
+			if (hPos === "R") return canvasWidth - dw;
+			return (canvasWidth - dw) / 2;
+		}
+
+		function alignY(dh) {
+			if (vPos === "T") return 0;
+			if (vPos === "B") return canvasHeight - dh;
+			return (canvasHeight - dh) / 2;
+		}
+
+		function tileImage(dx, dy, dw, dh) {
+//			First tile that can touch the visible canvas area
+			const startX = Math.floor((0 - dx) / dw) * dw + dx;
+			const startY = Math.floor((0 - dy) / dh) * dh + dy;
+
+			for (let y = startY; y < canvasHeight; y += dh) {
+				for (let x = startX; x < canvasWidth; x += dw) {
+					ctx.drawImage(img, x, y, dw, dh);
+				}
+			}
+		}
+
+		if (mode === "fill") {
+			ctx.drawImage(img, 0, 0, canvasWidth, canvasHeight);
+		} else if (mode === "cover") {
+			const scale = Math.max(canvasWidth / iw, canvasHeight / ih);
+			const dw = iw * scale;
+			const dh = ih * scale;
+			const dx = alignX(dw);
+			const dy = alignY(dh);
+			ctx.drawImage(img, dx, dy, dw, dh);
+		} else { // contain
+			const dx = alignX(iw);
+			const dy = alignY(ih);
+
+			if (iw >= canvasWidth && ih >= canvasHeight) {
+//				If the image fully covers the canvas, one draw is enough.
+				ctx.drawImage(img, dx, dy, iw, ih);
+			} else {
+//				Draw the main image and repeat it to fill missing areas.
+				tileImage(dx, dy, iw, ih);
+			}
+		}
+
+		ctx.restore();
+		ctx.globalAlpha = oldAlpha;
+		ctx.imageSmoothingEnabled = oldSmoothing;
+	}
+
+	function drawBackgroundImageOnDiv(divElement, bgimage) {
+		if (!divElement || !bgimage || !bgimage.image || !bgimage.width || !bgimage.height) return;
+
+		const img = bgimage.image;
+		const validImage =
+		(img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) ||
+		(img instanceof HTMLCanvasElement && img.width > 0 && img.height > 0) ||
+		(img instanceof ImageBitmap) ||
+		(img instanceof HTMLVideoElement && img.readyState >= 2);
+
+		if (!validImage) return;
+
+		const canvasWidth  = P.calc.canvasWidth  || divElement.clientWidth;
+		const canvasHeight = P.calc.canvasHeight || divElement.clientHeight;
+
+		const mode = String(P.calc.bgimgtransform || "contain").toLowerCase();
+		const pos  = String(P.calc.bgimgpos || "CM").toUpperCase();
+		const hPos = pos[0] || "C";
+		const vPos = pos[1] || "M";
+		const opacity = (P.calc.bgimgopacity == null) ? 1 : P.calc.bgimgopacity;
+
+		function alignX(dw) {
+			if (hPos === "L") return 0;
+			if (hPos === "R") return canvasWidth - dw;
+			return (canvasWidth - dw) / 2;
+		}
+
+		function alignY(dh) {
+			if (vPos === "T") return 0;
+			if (vPos === "B") return canvasHeight - dh;
+			return (canvasHeight - dh) / 2;
+		}
+
+		function backgroundPositionString(hPos, vPos) {
+			const x = hPos === "L" ? "left" : hPos === "R" ? "right" : "center";
+			const y = vPos === "T" ? "top" : vPos === "B" ? "bottom" : "center";
+			return `${x} ${y}`;
+		}
+
+//		Reuse or create the background layer
+		let layer = divElement.querySelector(":scope > .bg-image-layer");
+		if (!layer) {
+			layer = document.createElement("div");
+			layer.className = "bg-image-layer";
+			layer.style.position = "absolute";
+			layer.style.left = "0";
+			layer.style.top = "0";
+			layer.style.pointerEvents = "none";
+			layer.style.overflow = "hidden";
+			divElement.insertBefore(layer, divElement.firstChild);
+		}
+
+		layer.style.width = canvasWidth + "px";
+		layer.style.height = canvasHeight + "px";
+		layer.style.opacity = String(opacity);
+		layer.style.backgroundImage = `url("${img.src || ""}")`;
+		layer.style.backgroundRepeat = "no-repeat";
+		layer.style.backgroundPosition = "0 0";
+		layer.style.backgroundSize = "auto";
+
+		const iw = bgimage.width;
+		const ih = bgimage.height;
+
+		if (mode === "fill") {
+			layer.style.backgroundSize = "100% 100%";
+			layer.style.backgroundPosition = "0 0";
+		} else if (mode === "cover") {
+			layer.style.backgroundSize = "cover";
+			layer.style.backgroundPosition = backgroundPositionString(hPos, vPos);
+		} else {
+//			contain
+			layer.style.backgroundSize = "auto";
+			layer.style.backgroundRepeat = "repeat";
+			layer.style.backgroundPosition = backgroundPositionString(hPos, vPos);
+		}
+	}
+
+	function drawCaptionsOnCanvas(ctx) {
+		if (!ctx || !window.P || !P.calc || !Array.isArray(P.calc.pos) || !Array.isArray(P.pics)) {return;}
+
+		const fontFamily = P.calc.titlefontfamily || "sans-serif";
+		const fontSize = Number(P.calc.titlefontsize) || 16;
+		const color = P.calc.titlecolor || "#000";
+		const colorstroke = P.calc.titlecolorstroke || "#FF7";
+		const strokewidth = P.calc.titlestrokewidth || 3;
+		const useFilename = !!P.calc.titleusefilename;
+		const imageAnchor = (P.calc.titleimageanchor || "CM").toUpperCase();
+		const textAnchor = (P.calc.titletextanchor || "CM").toUpperCase();
+		const dist = P.calc.titledistances || { x: 0, y: 0 };
+		const angleDeg = Number(P.calc.titleangle) || 0;
+		const angleRad = angleDeg * Math.PI / 180;
+
+		for (let i = 0; i < P.calc.pos.length; i++) {
+			const pos = P.calc.pos[i];
+			if (!pos) continue;
+
+			const pic = P.pics[pos.idx];
+			if (!pic) continue;
+
+			let textContent = pic.title || '';
+			if (useFilename && !textContent) {textContent = pic.file && pic.file.name ? pic.file.name : '';}
+			if (!textContent) continue;
+
+			const imgRef = getAnchorPointXY(pos, imageAnchor);
+			const textRef = getAnchorPointXY(getCanvasTextBox(ctx, textContent, fontSize, fontFamily), textAnchor);
+			const targetX = imgRef.x + (Number(dist.x) || 0);
+			const targetY = imgRef.y + (Number(dist.y) || 0);
+
+			ctx.save();
+			ctx.font = `${fontSize}px ${fontFamily}`;
+			ctx.fillStyle = color;
+			ctx.strokeStyle = colorstroke;
+			ctx.lineWidth = strokewidth;
+			ctx.translate(targetX, targetY);
+			ctx.rotate(angleRad);
+			ctx.lineJoin = "round";
+			ctx.lineCap = "round";
+			ctx.strokeText(textContent, -textRef.x, -textRef.y);
+			ctx.fillText(textContent, -textRef.x, -textRef.y);
+			ctx.restore();
+		}
+	}
+
+	function drawCaptionsOnDiv(divElement) {
+		if (!divElement || !window.P || !P.calc || !Array.isArray(P.calc.pos) || !Array.isArray(P.pics)) {return;}
+
+		const canvasWidth  = P.calc.canvasWidth  || divElement.style.width;
+		const canvasHeight = P.calc.canvasHeight || divElement.style.height;
+
+		const fontFamily = P.calc.titlefontfamily || "sans-serif";
+		const fontSize = Number(P.calc.titlefontsize) || 16;
+		const color = P.calc.titlecolor || "#000";
+		const colorstroke = P.calc.titlecolorstroke || "#FF7";
+		const strokewidth = P.calc.titlestrokewidth || 3;
+		const useFilename = !!P.calc.titleusefilename;
+		const imageAnchor = (P.calc.titleimageanchor || "CM").toUpperCase();
+		const textAnchor = (P.calc.titletextanchor || "CM").toUpperCase();
+		const dist = P.calc.titledistances || { x: 0, y: 0 };
+		const angleDeg = Number(P.calc.titleangle) || 0;
+		const angleRad = angleDeg * Math.PI / 180;
+
+		const container = createChild(divElement, 'div', {style: 'position: absolute; left: 0; top: 0;'});
+		container.style.width = canvasWidth + "px";
+		container.style.height = canvasHeight + "px";
+
+		for (let i = 0; i < P.calc.pos.length; i++) {
+			const pos = P.calc.pos[i];
+			if (!pos) continue;
+			const pic = P.pics[pos.idx];
+			if (!pic) continue;
+
+			let textContent = pic.title || '';
+			if (useFilename && !textContent) {textContent = pic.file && pic.file.name ? pic.file.name : '';}
+			if (!textContent) continue;
+
+//			measure text with a temporary element
+			const textBox = getDivTextBox(textContent, fontSize, fontFamily);
+			const textRef = getAnchorPointXY(textBox, textAnchor);
+			const imgRef = getAnchorPointXY(pos, imageAnchor);
+
+			const targetX = imgRef.x + (Number(dist.x) || 0);
+			const targetY = imgRef.y + (Number(dist.y) || 0);
+
+			const caption = HTelementChild(container, 'div', textContent, style={
+				position: 'absolute',
+				left: targetX + 'px',
+				top: targetY + 'px',
+				fontFamily: fontFamily,
+				fontSize: fontSize + 'px',
+				color: color,
+				whiteSpace: 'nowrap',
+				transformOrigin: '0 0'
+			});
+
+//			approximate stroke via text-shadow (multiple offsets)
+			if (strokewidth > 0 && colorstroke) {
+				const w = strokewidth;
+				caption.style.textShadow =
+					`${w}px 0 ${colorstroke},` +
+					`-${w}px 0 ${colorstroke},` +
+					`0 ${w}px ${colorstroke},` +
+					`0 -${w}px ${colorstroke}`;
+			}
+
+//			combine rotation + internal translation like canvas translate+rotate+draw
+			const dx = -textRef.x;
+			const dy = -textRef.y;
+			caption.style.transform = `rotate(${angleDeg}deg) translate(${dx}px, ${dy}px)`;
+		}
+	}
+
+	function getAnchorPointXY(box, anchor) {
+		const h = anchor[0] || "C";
+		const v = anchor[1] || "M";
+		function splitAnchor(value, first, last, pos, size) {
+			if (value == first) {
+				return pos;
+			} else if (value == last) {
+				return pos + size;
+			} else {
+				return pos + size / 2;
+			}				
+		}
+		return {
+			x: splitAnchor(h, 'L', 'R', box.left, box.width), 
+			y: splitAnchor(v, 'T', 'B', box.top, box.height)
+		};
+	}
+
+	function getCanvasTextBox(ctx, textContent, fontSize, fontFamily) {
+		ctx.font = `${fontSize}px ${fontFamily}`;
+		ctx.textBaseline = 'alphabetic';
+		ctx.textAlign = 'left';
+		const metrics = ctx.measureText(textContent);
+		return {
+			left: -metrics.actualBoundingBoxLeft,
+			top: -metrics.actualBoundingBoxAscent,
+			width: metrics.actualBoundingBoxLeft + metrics.actualBoundingBoxRight,
+			height: metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent
+		};
+	}
+
+	function getDivTextBox(textContent, fontSize, fontFamily) {
+		const tmp = document.createElement('div');
+		tmp.textContent = textContent;
+		tmp.style.position = 'absolute';
+		tmp.style.visibility = 'hidden';
+		tmp.style.whiteSpace = 'nowrap';
+		tmp.style.fontFamily = fontFamily;
+		tmp.style.fontSize = fontSize + 'px';
+		tmp.style.lineHeight = 'normal'; // closer to canvas
+		document.body.appendChild(tmp);
+
+		const rect = tmp.getBoundingClientRect();
+		document.body.removeChild(tmp);
+
+		return {
+			left: 0,
+			top: 0,
+			width: rect.width,
+			height: rect.height
+		};
 	}
 
 	function createWindow(winName, winHead, winBody, winFeatures) {
@@ -441,9 +1331,9 @@
 		});
 		return parts.join(', ');
 	}
-//	------------------------------------------------------------
+//	============================================================
 //	NoCanvas window special functions
-//	------------------------------------------------------------
+//	============================================================
 	function HTelementChild(parent, tag, innerHTML='', style={}, attrib={}) {
 		const newele = document.createElement(tag);
 		newele.innerHTML = innerHTML;
@@ -575,9 +1465,9 @@
 		left.style.display = picNum <= 1 ? 'none' : '';
 		right.style.display = picNum >= picCount ? 'none' : '';
 	}
-//	------------------------------------------------------------
+//	============================================================
 //	Calculation
-//	------------------------------------------------------------
+//	============================================================
 	function calculate() {
 		if (P.pics.length > 0) {
 			P.RT.start('calculate');
@@ -607,51 +1497,53 @@
 
 	function getDialogueParameters() {
 //	Read all user entry and convert appropriately
-		let key;
-		const pt = P.posterType.toString();
-		const ptL = pt.length;
+		logConsole('getDialogueParameters - Start');
 		P.calc = {};
-		
-		EL['pp0'].querySelectorAll('input').forEach((input) => {
-			switch(input.type) {
-				case 'radio':
-					key = input.checked ? input.name : false; break;
-				default:
-					key = input.id;
-			}
-			if (key) {P.calc[key] = input.value;}			
-		});
-		EL['pp0'].querySelectorAll('select').forEach((sel) => {
-			key = sel.id;
-			if (key) {P.calc[key] = sel.value;}			
-		});
+		const typeDependentKeys = ['aspect', 'fit', 'colcount', 'rowcount', 'singleWidth', 'singleHeight', 'targetWidth', 'targetHeight'];
+		const integerValueKeys = ['colcount', 'rowcount', 'singleWidth', 'singleHeight', 'targetWidth', 'targetHeight', 'borderwidth', 'corner'];
 
-		EL['pp' + pt].querySelectorAll('input').forEach((input) => {
-			switch(input.type) {
-				case 'radio':
-					key = input.checked ? input.name : false; break;
-				default:
-					key = input.id;
+		for (const [name, ele] of Object.entries(EL)) {
+			if (!('tagName' in ele)) {continue;}
+			switch (ele.tagName.toLowerCase()) {
+				case 'input':
+					switch (ele.type.toLowerCase()) {
+						case 'text':
+						case 'color':
+							P.calc[name] = ele.value;
+							break;
+						case 'radio':
+							if (ele.checked && ele.name) {P.calc[ele.name] = ele.value;}
+							break;
+						case 'checkbox':
+							P.calc[name] = ele.checked;
+							break;
+					}
+					break;
+				case 'select':
+					P.calc[name] = ele.value;
+					break;
 			}
-			if (key) {key = key.slice(-ptL) == pt ? key.slice(0, -ptL) : false;}
-			if (key) {P.calc[key] = input.value;}			
-		});
-		EL['pp' + pt].querySelectorAll('select').forEach((sel) => {
-			key = sel.id;
-			if (key) {P.calc[key] = sel.value;}			
+		}
+
+		const pt = P.posterType.toString();
+		typeDependentKeys.forEach(key => {
+			const src = key + pt;
+			if (Object.hasOwn(P.calc, src) && P.calc[src] !== undefined) {
+				P.calc[key] = P.calc[src];
+			}
+//			if (key + pt in P.calc) {P.calc[key] = P.calc[key + pt];}
 		});
 
 		if (P.calc.margins) {
 			const marginValue = P.calc.margins;
-			P.calc.margins = {};
-			marginSplit(marginValue, P.calc.margins, ['top', 'right', 'bottom', 'left']);
+			P.calc.margins = Object.assign({}, marginSplit(P.calc.margins, ['top', 'right', 'bottom', 'left']));
 		} else {
 			P.calc.margins = {};
 		}
-		marginSplit(P.calc.gaps, P.calc.margins, ['gapHorizontal', 'gapVertical']);
+		P.calc.margins = Object.assign(P.calc.margins, marginSplit(P.calc.gaps, ['gapHorizontal', 'gapVertical']));
 
-		['colcount', 'rowcount', 'singleWidth', 'singleHeight', 'targetWidth', 'targetHeight', 'borderwidth', 'corner'].forEach(key => {
-			P.calc[key] = parseInt(P.calc[key] || 0);
+		integerValueKeys.forEach(key => {
+			if (key in P.calc) {P.calc[key] = parseInt(P.calc[key] || 0);}
 		});
 		
 		['colgrid', 'rowgrid'].forEach(key => {
@@ -667,12 +1559,18 @@
 		}
 		P.calc.borderCSS = (P.calc.borderwidth && P.calc.borderstyle) ? P.calc.borderwidth + 'px ' + P.calc.borderstyle + ' ' + P.calc.bordercolor : '';
 		P.calc.cornerCSS = P.calc.corner ? P.calc.corner + 'px' : '';
-		P.calc.quality = parseFloat(P.calc.quality.replace(',', '.'));
-		if (!(P.calc.quality > 0.0 && P.calc.quality <= 1.0)) {
-			P.calc.quality = 0.9;
-			EL.quality.value = 0.9;
+		[EL.quality.value, P.calc.quality] = validateUserInput('percent', P.calc.quality, 0.9);
+		if (P.calc.bgimg) {
+			[EL.bgimgpos.value, P.calc.bgimgpos] = validateUserInput('position', P.calc.bgimgpos);
+			[EL.bgimgopacity.value, P.calc.bgimgopacity] = validateUserInput('percent', P.calc.bgimgopacity, 1);
 		}
-		if (LOG) {console.log('getDialogueParameters - P.calc:', P.calc);}
+		if (P.calc.imcap) {
+			[EL.titleimageanchor.value, P.calc.titleimageanchor] = validateUserInput('position', P.calc.titleimageanchor);
+			[EL.titletextanchor.value, P.calc.titletextanchor] = validateUserInput('position', P.calc.titletextanchor);
+			[EL.titledistances.value, P.calc.titledistances] = validateUserInput('xy', P.calc.titledistances);
+		}
+
+		logConsole('getDialogueParameters - P.calc snapshot):', JSON.parse(JSON.stringify(P.calc)));
 	}
 
 	function parseGritInput(grid) {
@@ -689,25 +1587,88 @@
 		}
 	}
 
-	function marginSplit(margins, outobj, params) {
+	function marginSplit(margins, params) {
 //	Handle data entry for margins and gaps
-		const M = margins.split(',').map(m => parseInt(m));
-		switch (M.length) {
-			case 1:
-				params.forEach(p => {outobj[p] = M[0];});
-				return true;
-			case 2:
-				params.forEach((p, i) => {outobj[p] = M[i%2];});
-				return true;
-			case 3:
-				const J = [0, 1, 2, 1];
-				params.forEach((p, i) => {outobj[p] = M[J[i%4]];});
-				return true;
-			case 4:
-				params.forEach((p, i) => {outobj[p] = M[i%4];});
-				return true;
+		const outobj = {};
+		try {
+			const M = margins.split(',').map(m => parseInt(m));
+			switch (M.length) {
+				case 1:
+					params.forEach(p => {outobj[p] = M[0];});
+					break;
+				case 2:
+					params.forEach((p, i) => {outobj[p] = M[i%2];});
+					break;
+				case 3:
+					const J = [0, 1, 2, 1];
+					params.forEach((p, i) => {outobj[p] = M[J[i%4]];});
+					break;
+				case 4:
+					params.forEach((p, i) => {outobj[p] = M[i%4];});
+					break;
+			}
+		} catch (error) {
+			console.warn('marginSplit - error:', error.message);
 		}
-		return false;
+		return outobj;
+	}
+
+	function validateUserInput(mode, userInput, defaultValue=null) {
+//		Returns [validatedStringForDisplay, validatedVariableForProcessing]
+		if (!(defaultValue == null) && !Array.isArray(defaultValue)) {
+			defaultValue = [String(defaultValue), defaultValue];
+		}
+		switch (mode.toLowerCase()) {
+			case 'position':
+//				Valid Position (2 chars uppercase, first: L/C/R, second: T/M/B)
+				const langSpecific = (value) => {
+					switch (P.messages.options.lang) {
+						case 'de':
+							return value.replace('C', 'M').replace('T', 'O').replace('B', 'U');
+						default:
+							return value;
+					}
+				};
+				if (defaultValue == null) {defaultValue = [langSpecific('CM'), 'CM'];}
+				const letters = String(userInput).replace(/[^a-z]/gi, '');
+				if (letters.length !== 2) return defaultValue;
+				const first = letters[0].toUpperCase();
+				const second = letters[1].toUpperCase();
+				const firstMap = {L: 'L', M: 'C', C: 'C', R: 'R'};
+				const secondMap = {O: 'T', T: 'T', C: 'M', M: 'M', U: 'B', B: 'B'};
+				const mappedFirst = firstMap[first];
+				const mappedSecond = secondMap[second];
+				if (!mappedFirst || !mappedSecond) return defaultValue;
+				return [langSpecific(mappedFirst + mappedSecond), mappedFirst + mappedSecond];
+			case 'percent':
+//				Valid percent number as float between 0 and 1
+				if (defaultValue == null) defaultValue = ['0', 0];
+				const raw = String(userInput).trim();
+				const hasPercent = raw.includes('%');
+				const cleaned = raw
+				.replace(/[^0-9.,]/g, '')		// keep only digits, dot, comma
+				.replace(/,/g, '.');			// comma means dot
+				if (!cleaned) return defaultValue;
+				const value = parseFloat(cleaned);
+				if (Number.isNaN(value)) return defaultValue;
+				const result = hasPercent ? value / 100 : value;
+				const work = result < 0 ? 0 : result > 1 ? 1 : result;
+				return [String(work), work];
+			case 'xy':
+//				Pair of x any y values separated by comma or space
+				if (defaultValue == null) defaultValue = ['', {x: 0, y: 0}];
+				if (typeof userInput !== 'string') return defaultValue;
+				const parts = userInput.trim().split(/[\s,]+/);
+				if (parts.length !== 2) return defaultValue;
+				const x = Number(parts[0]);
+				const y = Number(parts[1]);
+				if (!Number.isFinite(x) || !Number.isFinite(y)) return defaultValue;
+				const display = (x == 0 && y == 0) ? '' : String(x) + ', ' + String(y);
+				return [display, { x, y }];
+			default:
+				console.warn('validateUserInput', items, target);
+				return [userInput, userInput]
+		}
 	}
 
 	function calculate1() {
@@ -898,6 +1859,7 @@
 	function evaluateAspect() {
 //	Calculate singleHeight and singleWidth based on aspect
 		P.RT.start('evaluateAspect');
+		logConsole('evaluateAspect - P.calc snapshot start):', JSON.parse(JSON.stringify(P.calc)));
 		if (P.calc.singleWidth > 0 && P.calc.singleHeight > 0) {return true;}
 		if (P.calc.aspect == '') {P.calc.aspect = 'D';}
 		P.calc.aspect = P.calc.aspect.replace(/,/g, ".");
@@ -944,6 +1906,7 @@
 			P.calc.singleWidth = Math.round(P.calc.singleHeight*P.calc.aspect);
 		}
 		P.RT.show('evaluateAspect');
+		logConsole('evaluateAspect - P.calc snapshot end):', JSON.parse(JSON.stringify(P.calc)));
 		return (P.calc.singleWidth > 0 && P.calc.singleHeight > 0);
 	}
 
@@ -1029,14 +1992,14 @@
 				seg++; nOld = nn;
 			}
 		});
-		if (LOG) {console.log('optimizeSegmentationDynPro results', {
+		logConsole('optimizeSegmentationDynPro results', {
 			iterationCounter: iterationCounter, 
 			kk: kk, 
 			out: out, 
 			S: S, 
 			T: T, 
 			v: v
-		});}
+		});
 		P.RT.show('optimizeSegmentationDynPro');
 		return out;
 	}
@@ -1144,59 +2107,30 @@
 		res = u.sort((a, b) => {return ascending ? a.value-b.value : b.value-a.value;});
 		return arrayOfObjectsReducedByKey(res, 'idx');
 	}
-//	------------------------------------------------------------
-//	Button: Save poster
-//	------------------------------------------------------------
-	function posterOut() {
-		switch (P.outputType) {
-			case 1:
-				return canvasOut();
-			case 2:
-				return DOM2jpegOut();
-		}
-	}
-
-	function canvasOut() {
-		if (EL.canvas && EL.ctx && P.canwindow.name == P.posterWindowName) {
-			P.waitload.clear();
-			const canvasUrl = EL.canvas.toDataURL('image/jpeg', P.calc.quality);
-			const downloadLink = document.createElement('a');
-			downloadLink.href = canvasUrl;
-			downloadLink.download = P.posterWindowName + '.jpg';
-			downloadLink.click();
-			downloadLink.remove();
-			return true;
-		} else {return false;}
-	}
-
-	function DOM2jpegOut() {
-		if (LOG) {console.log('... starting DOM2jpegOut ...');}
-		if (EL.nocanvas && P.nocanWindow.name == P.posterWindowName){
-			P.waitload.clear();
-			const render = node => {
-				if (LOG) {console.log('... starting render - node:', node);}
-				domtoimage.toJpeg(node, { quality: P.calc.quality })
-				.then(dataUrl => {
-					P.RT.show('DOM2jpegOut end');
-					const img = new Image();
-					img.src = dataUrl;
-					var link = document.createElement('a');
-					link.download = P.posterWindowName + '.jpg';
-					link.href = dataUrl;
-					link.click();
-	//				document.body.appendChild(img);
-				})
-				.catch(error =>
-					console.error('oops, something went wrong!', error)
-				);
-			}
-			P.RT.start('DOM2jpegOut');
-			render(EL.nocanvas);
-		}
-	}
-//	------------------------------------------------------------
+//	============================================================
 //	Miscellaneous
-//	------------------------------------------------------------
+//	============================================================
+	function getClientOS() {
+		try {
+			if (typeof navigator === "undefined") return "non-browser";
+			const ua = navigator.userAgent || "";
+			const platform = navigator.userAgentData?.platform || navigator.platform || "";
+			if (/iPhone|iPad|iPod/i.test(ua) || /iPhone|iPad|iPod/i.test(platform)) return "iOS";
+			if (/iPad/i.test(ua) || /iPad/i.test(platform)) return "iPadOS";
+			if (/Mac/i.test(platform)) {
+				if (navigator.maxTouchPoints > 1) {return "iPadOS"}
+				return "macOS";
+			}
+			if (/Win/i.test(platform)) return "Windows";
+			if (/Android/i.test(ua)) return "Android";
+			if (/Linux/i.test(platform)) return "Linux";
+			return "Unknown";
+		} catch (err) {
+			console.warn('Error getting client OS:', err);
+			return 'Unable to determine client OS';
+		}
+	}
+
 	function saveVariable(data) {
 		const blob = new Blob([JSON.stringify(data)], {type: 'text/json'});
 		const downloadLink = document.createElement('a');
@@ -1207,22 +2141,37 @@
 	}
 
 	function updateFileList() {
-		if (LOG) {console.log('updateFileList');}
+		logConsole('updateFileList');
 		const ELE = {};
 		EL.filelist.innerHTML = '';
 		if (P.order.length > 0) {
 			ELE.h4 = createChild(EL.filelist, 'h4');
-			ELE.h4.innerHTML = P.order.length + ' Bilder geladen';
+			ELE.h4.innerHTML = P.order.length + ' ' + P.messages.getmsg('imgloaded');
 			ELE.info = createChild(EL.filelist, 'p');
-			ELE.info.innerHTML = 'Die Reihenfolge der Bilder kann durch Verschieben geändert werden';
+			ELE.info.innerHTML = P.messages.getmsg('imgmoveable');
 			EL.area = createChild(EL.filelist, 'div', 'filearea');
+			let Number = 0
 			P.order.forEach((idx, i) => {
+				Number += 1
 				ELE.block = createChild(EL.area, 'div', 'fileblock');
 				ELE.block.setAttribute('id', 'imgorder-' + i);
+				ELE.filenumber = createChild(ELE.block, 'div', 'filenumber');
+				ELE.filenumber.innerHTML = Number;
 				ELE.fileimg = ELE.block.appendChild(P.pics[idx].image.cloneNode(true));
 				ELE.fileimg.setAttribute('class', 'fileimg');
 				ELE.filename = createChild(ELE.block, 'div', 'filename');
 				ELE.filename.innerHTML = P.pics[idx].file.name;
+
+				ELE.filetitle = createChild(ELE.block, 'div', 'filetitle');
+				const inputID = 'imgcap_' + idx;
+				const inputEle = createChild(ELE.filetitle, 'input', {type: 'text', value: P.pics[idx].title});
+				inputEle.dataset.imgidx = idx;
+				inputEle.addEventListener('change', e => {
+					const input = e.currentTarget;
+					const idx = input.dataset.imgidx;
+					P.pics[idx].title = input.value;
+				});
+
 				ELE.fileTS = createChild(ELE.block, 'div', 'fileTS');
 				ELE.fileTS.innerHTML = formatTS(P.pics[idx].file.lastModified);
 				ELE.filesize = createChild(ELE.block, 'div', 'filesize');
@@ -1244,7 +2193,7 @@
 	}
 
 	function removeImage(evt, i) {
-		if (LOG) {console.log('removeImage - i, evt:', i, evt);}
+		logConsole('removeImage - i, evt:', i, evt);
 		if (P.order[i] || P.order[i] == 0) {
 			P.order.splice(i,1);
 			updateFileList();
@@ -1254,15 +2203,15 @@
 	}
 
 	function reorderImages(oldID, newID) {
-		if (LOG) {console.log('reorderImages - oldID, newID', oldID, newID);}
+		logConsole('reorderImages - oldID, newID', oldID, newID);
 		const results = P.mov.resultSequence().map(item => {
 			const parts = item.split('-');
 			return parseInt(parts[1]) || 0;
 		});
-		if (LOG) {console.log('reorderImages - ORDER alt', P.order);}
-		if (LOG) {console.log('reorderImages - MOV results', results);}
+		logConsole('reorderImages - ORDER alt', P.order);
+		logConsole('reorderImages - MOV results', results);
 		if (P.order.length == results.length) {P.order = results.slice();}
-		if (LOG) {console.log('reorderImages - P.order nach update', P.order);}
+		logConsole('reorderImages - P.order nach update', P.order);
 	}
 
 	function getAllElementsWithID() {
@@ -1273,18 +2222,84 @@
 		return E;
 	}
 
-	function createChild(parent, tag, attrib={}) {
+	function createChild(parentElement, tag, attrib={}, content='') {
+//		Create DOM element and connect to parent
 		const newEle = document.createElement(tag);
-		parent.appendChild(newEle);
+		getElement(parentElement).appendChild(newEle);
 		if (typeof attrib == 'string') {
 			newEle.setAttribute('class', attrib);
 		} else {
-			Object.entries(attrib).forEach(([k, v]) => {newEle.setAttribute(k, v);});}
+			Object.entries(attrib).forEach(([k, v]) => {newEle.setAttribute(k, v);});
+		}
+		if (content) {newEle.innerHTML = content;}
 		return newEle;
+	}
+
+	function getElement(elementID) {
+//		Get element by DOM element, ID oder special tags
+		if (typeof elementID === 'object' && elementID.isConnected) {return elementID;}
+		if (typeof elementID === 'string' && ['html', 'head', 'body'].includes(elementID.toLowerCase())) {
+			return document.getElementsByTagName(elementID)[0];
+		}
+		return document.getElementById(elementID);
+	}
+
+	function prepareToggleSwitch(options={}) {
+		options = Object.assign({}, {
+			width: 50, 
+			colorON: '#40bf40', 
+			colorOFF: '#9f9f9f', 
+			colorbutton: '#f1f1f1',
+			divCSS: ''
+		}, options);
+		options.id = AUX.getUID('ts');
+		AUX.registerCSS(`
+	.${options.id} {display: inline-block; width: ${options.width}px; height: ${options.width/2}px; ${options.divCSS}}
+	.${options.id} input[type=checkbox]{top: -21px; margin: 0;height: 0; width: 0; visibility: hidden;}
+	.${options.id} label {
+		top: -28px; cursor: pointer; width: 100%; height: 100%;
+		background: ${options.colorOFF}; display: block; border-radius: 1000px; position: relative;
+	}
+	.${options.id} label:after {
+		content: ''; position: absolute; top: 5px; left: 5px;
+		width: calc(50% - 10px); height: calc(100% - 10px);
+		background: ${options.colorbutton}; border-radius: 1000px; transition: 0.3s;
+	}
+	.${options.id} input:checked + label {background: ${options.colorON};}
+	.${options.id} input:checked + label:after {left: calc(100% - 5px); transform: translateX(-100%);}
+	.${options.id} label:active:after {width: 65%;}
+		`);
+		return options;
+	}
+
+	function buildToggleSwitch(parentElement, options, callback=false) {
+		const inputID = AUX.getUID('cb');
+		const tsdiv = createChild(parentElement, 'div', options.id);
+		const tsinput = createChild(tsdiv, 'input', {type: 'checkbox', id: inputID});
+		const trlabel = createChild(tsdiv, 'label', {for: inputID});
+		if (callback) {tsinput.addEventListener('change', callback);}
+		return tsinput;
+	}
+
+	function buildSelectOptions(selectelement, options) {
+		if (Array.isArray(options)) {
+			options.forEach((opt) => {
+				createChild(selectelement, 'option', '', opt);
+			});
+		}
+		if (isObject(options)) {
+			Object.entries(options).forEach(([key, val]) => {
+				createChild(selectelement, 'option', {value: key}, val);
+			});
+		}
 	}
 
 	function limiter(value, lower, upper) {
 		return Math.min(Math.max(value, lower), upper);
+	}
+
+	function isObject(value) {
+		return value !== undefined && value !== null && typeof value === 'object' && !Array.isArray(value);
 	}
 
 	function formatTS(TS) {
@@ -1295,23 +2310,24 @@
 		return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 	}
 
-	function monitorInput() {
-		const nInput = EL.imgfile.files.length;
-		if (nInput > 0) {
-			EL.inputcount.innerHTML = nInput;
-			EL.inputlist.innerHTML = '';
-			createChild(EL.inputlist, 'h4').innerHTML = nInput + ' Bilder ausgewählt';
-			const ul = createChild(EL.inputlist, 'ul');
-			Array.from(EL.imgfile.files).forEach(inputfile => {
-				createChild(ul, 'li').innerHTML = inputfile.name;
-			});
-			EL.inputlist.style.display = 'block';
-		} else {
-			EL.inputcount.innerHTML = '';
-			EL.inputlist.innerHTML = '';
-			EL.inputlist.style.display = 'none';
-		}
+	function showElements(...elments) {
+		elments.forEach((ele) => {
+			ele.style.display = '';
+		});
 	}
+
+	function hideElements(...elments) {
+		elments.forEach((ele) => {
+			ele.style.display = 'none';
+		});
+	}
+
+	function cleanElements(...elments) {
+		elments.forEach((ele) => {
+			ele.innerHTML = '';
+		});
+	}
+
 //	============================================================
 //	Signaling mechanism for waiting on work to be processed
 //	============================================================
@@ -1339,13 +2355,13 @@ class waitCounter {
 class dnd_file_uploader {
 //	File input via dropzone
 	constructor(areaID, inputID, callback=false) {
-		if (LOG) {console.log('dnd_file_uploader - areaID, inputID:', areaID, inputID);}
+		logConsole('dnd_file_uploader - areaID, inputID:', areaID, inputID);
 		this.DT = {};
-		this.droparea = document.getElementById(areaID);
-		this.dropinput = document.getElementById(inputID);
+		this.droparea = getElement(areaID);
+		this.dropinput = getElement(inputID);
 
 		if (this.droparea && this.dropinput) {
-			if (LOG) {console.log('dnd_file_uploader - droparea, dropinput', this.droparea, this.dropinput);}
+			logConsole('dnd_file_uploader - droparea, dropinput', this.droparea, this.dropinput);
 			this.DT = new DataTransfer();
 			this.droparea.ondragover = this.droparea.ondragenter = function(evt) {
 				evt.stopPropagation();
@@ -1353,8 +2369,8 @@ class dnd_file_uploader {
 				evt.dataTransfer.dropEffect = 'copy';
 			};
 			this.droparea.ondrop = (function(evt) {
-				if (LOG) {console.log('droparea.ondrop - evt:', evt);}
-				if (LOG) {console.log('droparea.ondrop - evt.dataTransfer.files:', evt.dataTransfer.files);}
+				logConsole('droparea.ondrop - evt:', evt);
+				logConsole('droparea.ondrop - evt.dataTransfer.files:', evt.dataTransfer.files);
 				this.updateDT(evt.dataTransfer);
 				this.dropinput.files = evt.dataTransfer.files;
 				if (callback) {callback();}
@@ -1362,8 +2378,8 @@ class dnd_file_uploader {
 				evt.preventDefault();
 			}).bind(this);
 			this.dropinput.onchange = (function(evt) {
-				if (LOG) {console.log('dropinput.onchange - evt:', evt);}
-				if (LOG) {console.log('dropinput.onchange - files:', this.dropinput.files);}
+				logConsole('dropinput.onchange - evt:', evt);
+				logConsole('dropinput.onchange - files:', this.dropinput.files);
 				this.updateDT(this.dropinput);
 				if (callback) {callback();}
 			}).bind(this);
@@ -1371,11 +2387,11 @@ class dnd_file_uploader {
 	}
 	addDTitem(item) {
 //	Add item in DataTransfer object
-		if (LOG) {console.log('addDTitem - item:', item);}
+		logConsole('addDTitem - item:', item);
 		const filename = item.name;
 		for (let i=0; i<this.DT.files.length; i++) {
 			if (this.DT.files[i].name == filename) {
-				if (LOG) {console.log('addDTitem duplicate filename - DT[i]:', this.DT.files[i]);}
+				logConsole('addDTitem duplicate filename - DT[i]:', this.DT.files[i]);
 				return false;
 			}
 		}
@@ -1383,14 +2399,14 @@ class dnd_file_uploader {
 	}
 	removeDTitem(idx) {
 //	Remove item from DataTransfer object and refresh callback
-		if (LOG) {console.log('removeDTitem - idx:', idx);}
+		logConsole('removeDTitem - idx:', idx);
 		this.DT.items.remove(idx);
 		if (this.metadata) {this.getMetadata(this.metadata);}
 		if (this.callback) {this.callback(this.DT);}
 	}
 	updateDT(source) {
 //	Update DT adding files for multi or replacing the file for single
-		if (LOG) {console.log('updateDT - source', source);}
+		logConsole('updateDT - source', source);
 		for (let i=0; i<source.files.length; i++) {
 			this.addDTitem(source.files[i]);
 		}
@@ -1409,7 +2425,7 @@ class logmessage_manager {
 			prefix: 'log-'
 		}, options);
 		this.msgid = 0;
-		this.area = this.getElement(message_element_or_id);
+		this.area = getElement(message_element_or_id);
 	}
 	write(content, cls='', tag='div') {
 		this.msgid++;
@@ -1421,67 +2437,59 @@ class logmessage_manager {
 		this.area.innerHTML = '<' + tag + cl + ' id="' + id + '">' + this.getContent(content) + '</' + tag + '>' + this.area.innerHTML;
 		if (this.options.timeout > 0) {
 			window.setTimeout(() => {
-				document.getElementById(id).remove();
+				const logele = document.getElementById(id);
+				if (logele) {logele.remove();}
 			}, 1000 * this.options.timeout);
 		}
 	}
 	getContent(content) {
 		return this.options.messages ? this.options.messages(content) : content;
 	}
-	getElement(elementID) {
-		if (typeof elementID === 'object' && elementID.isConnected) {return elementID;}
-		if (typeof elementID === 'string' && ['html', 'head', 'body'].includes(elementID.toLowerCase())) {
-			return document.getElementsByTagName(elementID)[0];
-		}
-		return document.getElementById(elementID);
-	}
 	clear() {
 		this.area.innerHTML = '';
 	}
 }
-//	------------------------------------------------------------
-//	Language Support
-//	------------------------------------------------------------
-class language_support {
-	constructor(options) {
-		this.options = Object.assign({
-			lang: 'en',
-			defaultlang: 'en'
-		}, options);
-		this.msgdata = {};
+
+	function logConsole(...msg) {
+//		Log messages on console, if LOG is defined and true
+		if (typeof LOG !== 'undefined' && LOG) {console.log(...msg);}
 	}
-	load(messages) {this.msgdata = Object.assign({}, messages);}
-	setlanguage(lang) {this.options.lang = lang;}
-	getmsg(msgkey) {
-		if (this.msgdata[msgkey]?.[this.options.lang]) {return this.msgdata[msgkey][this.options.lang];}
-		if (this.msgdata[msgkey]?.[this.options.defaultlang]) {return this.msgdata[msgkey][this.options.defaultlang];}
-		return msgkey;
+
+//	============================================================
+//	General helpers
+//	============================================================
+class auxiliaryHelpers {
+	constructor() {
+		this.FTC = [];
+		this.CSS = false;
+		this.UID = {};
+	}
+	firstTimeCalled(keyword) {
+		if (this.FTC.includes(keyword)) {return false;}
+		if(typeof keyword === 'string' && keyword != '')  {
+			this.FTC.push(keyword);
+			return true;
+		}
+		return false;
+	}
+	registerCSS(CSStext) {
+		if (this.CSS === false) {
+			this.CSS = createChild('head', 'style');
+		}
+		if(typeof CSStext === 'string') {
+			this.CSS.innerHTML += CSStext;
+		}
+	}
+	getUID(label) {
+		label = String(label);
+		if (!(label in this.UID)) {this.UID[label] = 0;}
+		this.UID[label]++;
+		return label + this.UID[label];
 	}
 }
-	function defineMessages() {
-		return {
-			'noimgsel': {en: 'no picture files selected', de: 'Keine Bilder zum Laden ausgewählt'},
-			'zerowh': {en: 'Selection contains images with zero width or height', 
-					de: 'Auswahl enthält Bild mit Breite oder Höhe von Null'},
-			'posgenerr': {en: 'Poster generation failed', de: 'Postererstellung mit Fehler beendet'},
-			'wincreafail': {en: 'Error creating output window', de: 'Fehler beim Erzeugen des Ausgabefensters'},
-			'calcfail': {en: 'Calculation failed', de: 'Berechnung mit Fehler beendet'},
-			'colcounterr': {en: 'Illegal parameter column count', de: 'Unzulässiger Parameter bei Anzahl Spalten'},
-			'rowcounterr': {en: 'Illegal parameter row count', de: 'Unzulässiger Parameter bei Anzahl Zeilen'},
-			'illegalwha': {en: 'Illegal parameters for width, height or aspect', de: 'Unzulässige Parameter bei Einzelbild Breite, Höhe oder Seitenverhältnis'},
-			'pwiderr': {en: 'Invalid poster width', de: 'Unzulässige Poster-Breite'},
-			'pheighmiss': {en: 'Poster height, count of horizontal stripes or images per row are mandatory', de: 'Poster-Höhe, Anzahl horizontaler Streifen oder Bilder pro Zeile müssen angegeben werden'},
-			'invalidwhc': {en: 'Invalid parameters for width, height or count of stripes', de: 'Unzulässige Parameter bei Breite, Höhe oder Anzahl Streifen'},
-			'pheighterr': {en: 'Invalid poster height', de: 'Unzulässige Poster-Höhe'},
-			'': {en: 'Poster width or count of vertical stripes are mandatory', de: 'Poster-Breite oder Anzahl vertikaler Streifen müssen angegeben werden'},
-			'pwidthmiss': {en: '', de: ''},
-			'invalidhwc': {en: 'Invalid parameters for height, width or count of stripes', de: 'Unzulässige Parameter bei Höhe, Breite oder Anzahl Streifen'},
-			'postergen': {en: 'poster generated', de: 'Poster erzeugt'},
-			'calcdone': {en: 'calculation done', de: 'Berechnung erfolgt'}
-		};
-	}
+
 //	============================================================
-//	Runtime measurement
+//	Measurement of runtimes
 //	============================================================
 class runtime_measurement {
 	constructor(options={}) {
@@ -1512,6 +2520,7 @@ class runtime_measurement {
 		return lead + time.toPrecision(4) + ' s';
 	}
 }
+
 //	============================================================
 //	Change order sequence by DND of elements
 //	============================================================
@@ -1602,9 +2611,148 @@ class jsf_dnd_mover {
 		return out;
 	}
 }
+
 //	============================================================
-//	DOM-to-image
+//	Language Support
 //	============================================================
-/*	dom-to-image 10-06-2017 (c) 2015 Anatolii Saienko, MIT License
-	https://github.com/tsayen/dom-to-image						*/
-!function(a){"use strict";function b(a,b){function c(a){return b.bgcolor&&(a.style.backgroundColor=b.bgcolor),b.width&&(a.style.width=b.width+"px"),b.height&&(a.style.height=b.height+"px"),b.style&&Object.keys(b.style).forEach(function(c){a.style[c]=b.style[c]}),a}return b=b||{},g(b),Promise.resolve(a).then(function(a){return i(a,b.filter,!0)}).then(j).then(k).then(c).then(function(c){return l(c,b.width||q.width(a),b.height||q.height(a))})}function c(a,b){return h(a,b||{}).then(function(b){return b.getContext("2d").getImageData(0,0,q.width(a),q.height(a)).data})}function d(a,b){return h(a,b||{}).then(function(a){return a.toDataURL()})}function e(a,b){return b=b||{},h(a,b).then(function(a){return a.toDataURL("image/jpeg",b.quality||1)})}function f(a,b){return h(a,b||{}).then(q.canvasToBlob)}function g(a){"undefined"==typeof a.imagePlaceholder?v.impl.options.imagePlaceholder=u.imagePlaceholder:v.impl.options.imagePlaceholder=a.imagePlaceholder,"undefined"==typeof a.cacheBust?v.impl.options.cacheBust=u.cacheBust:v.impl.options.cacheBust=a.cacheBust}function h(a,c){function d(a){var b=document.createElement("canvas");if(b.width=c.width||q.width(a),b.height=c.height||q.height(a),c.bgcolor){var d=b.getContext("2d");d.fillStyle=c.bgcolor,d.fillRect(0,0,b.width,b.height)}return b}return b(a,c).then(q.makeImage).then(q.delay(100)).then(function(b){var c=d(a);return c.getContext("2d").drawImage(b,0,0),c})}function i(a,b,c){function d(a){return a instanceof HTMLCanvasElement?q.makeImage(a.toDataURL()):a.cloneNode(!1)}function e(a,b,c){function d(a,b,c){var d=Promise.resolve();return b.forEach(function(b){d=d.then(function(){return i(b,c)}).then(function(b){b&&a.appendChild(b)})}),d}var e=a.childNodes;return 0===e.length?Promise.resolve(b):d(b,q.asArray(e),c).then(function(){return b})}function f(a,b){function c(){function c(a,b){function c(a,b){q.asArray(a).forEach(function(c){b.setProperty(c,a.getPropertyValue(c),a.getPropertyPriority(c))})}a.cssText?b.cssText=a.cssText:c(a,b)}c(window.getComputedStyle(a),b.style)}function d(){function c(c){function d(a,b,c){function d(a){var b=a.getPropertyValue("content");return a.cssText+" content: "+b+";"}function e(a){function b(b){return b+": "+a.getPropertyValue(b)+(a.getPropertyPriority(b)?" !important":"")}return q.asArray(a).map(b).join("; ")+";"}var f="."+a+":"+b,g=c.cssText?d(c):e(c);return document.createTextNode(f+"{"+g+"}")}var e=window.getComputedStyle(a,c),f=e.getPropertyValue("content");if(""!==f&&"none"!==f){var g=q.uid();b.className=b.className+" "+g;var h=document.createElement("style");h.appendChild(d(g,c,e)),b.appendChild(h)}}[":before",":after"].forEach(function(a){c(a)})}function e(){a instanceof HTMLTextAreaElement&&(b.innerHTML=a.value),a instanceof HTMLInputElement&&b.setAttribute("value",a.value)}function f(){b instanceof SVGElement&&(b.setAttribute("xmlns","http://www.w3.org/2000/svg"),b instanceof SVGRectElement&&["width","height"].forEach(function(a){var c=b.getAttribute(a);c&&b.style.setProperty(a,c)}))}return b instanceof Element?Promise.resolve().then(c).then(d).then(e).then(f).then(function(){return b}):b}return c||!b||b(a)?Promise.resolve(a).then(d).then(function(c){return e(a,c,b)}).then(function(b){return f(a,b)}):Promise.resolve()}function j(a){return s.resolveAll().then(function(b){var c=document.createElement("style");return a.appendChild(c),c.appendChild(document.createTextNode(b)),a})}function k(a){return t.inlineAll(a).then(function(){return a})}function l(a,b,c){return Promise.resolve(a).then(function(a){return a.setAttribute("xmlns","http://www.w3.org/1999/xhtml"),(new XMLSerializer).serializeToString(a)}).then(q.escapeXhtml).then(function(a){return'<foreignObject x="0" y="0" width="100%" height="100%">'+a+"</foreignObject>"}).then(function(a){return'<svg xmlns="http://www.w3.org/2000/svg" width="'+b+'" height="'+c+'">'+a+"</svg>"}).then(function(a){return"data:image/svg+xml;charset=utf-8,"+a})}function m(){function a(){var a="application/font-woff",b="image/jpeg";return{woff:a,woff2:a,ttf:"application/font-truetype",eot:"application/vnd.ms-fontobject",png:"image/png",jpg:b,jpeg:b,gif:"image/gif",tiff:"image/tiff",svg:"image/svg+xml"}}function b(a){var b=/\.([^\.\/]*?)$/g.exec(a);return b?b[1]:""}function c(c){var d=b(c).toLowerCase();return a()[d]||""}function d(a){return a.search(/^(data:)/)!==-1}function e(a){return new Promise(function(b){for(var c=window.atob(a.toDataURL().split(",")[1]),d=c.length,e=new Uint8Array(d),f=0;f<d;f++)e[f]=c.charCodeAt(f);b(new Blob([e],{type:"image/png"}))})}function f(a){return a.toBlob?new Promise(function(b){a.toBlob(b)}):e(a)}function g(a,b){var c=document.implementation.createHTMLDocument(),d=c.createElement("base");c.head.appendChild(d);var e=c.createElement("a");return c.body.appendChild(e),d.href=b,e.href=a,e.href}function h(){var a=0;return function(){function b(){return("0000"+(Math.random()*Math.pow(36,4)<<0).toString(36)).slice(-4)}return"u"+b()+a++}}function i(a){return new Promise(function(b,c){var d=new Image;d.onload=function(){b(d)},d.onerror=c,d.src=a})}function j(a){var b=3e4;return v.impl.options.cacheBust&&(a+=(/\?/.test(a)?"&":"?")+(new Date).getTime()),new Promise(function(c){function d(){if(4===g.readyState){if(200!==g.status)return void(h?c(h):f("cannot fetch resource: "+a+", status: "+g.status));var b=new FileReader;b.onloadend=function(){var a=b.result.split(/,/)[1];c(a)},b.readAsDataURL(g.response)}}function e(){h?c(h):f("timeout of "+b+"ms occured while fetching resource: "+a)}function f(a){console.error(a),c("")}var g=new XMLHttpRequest;g.onreadystatechange=d,g.ontimeout=e,g.responseType="blob",g.timeout=b,g.open("GET",a,!0),g.send();var h;if(v.impl.options.imagePlaceholder){var i=v.impl.options.imagePlaceholder.split(/,/);i&&i[1]&&(h=i[1])}})}function k(a,b){return"data:"+b+";base64,"+a}function l(a){return a.replace(/([.*+?^${}()|\[\]\/\\])/g,"\\$1")}function m(a){return function(b){return new Promise(function(c){setTimeout(function(){c(b)},a)})}}function n(a){for(var b=[],c=a.length,d=0;d<c;d++)b.push(a[d]);return b}function o(a){return a.replace(/#/g,"%23").replace(/\n/g,"%0A")}function p(a){var b=r(a,"border-left-width"),c=r(a,"border-right-width");return a.scrollWidth+b+c}function q(a){var b=r(a,"border-top-width"),c=r(a,"border-bottom-width");return a.scrollHeight+b+c}function r(a,b){var c=window.getComputedStyle(a).getPropertyValue(b);return parseFloat(c.replace("px",""))}return{escape:l,parseExtension:b,mimeType:c,dataAsUrl:k,isDataUrl:d,canvasToBlob:f,resolveUrl:g,getAndEncode:j,uid:h(),delay:m,asArray:n,escapeXhtml:o,makeImage:i,width:p,height:q}}function n(){function a(a){return a.search(e)!==-1}function b(a){for(var b,c=[];null!==(b=e.exec(a));)c.push(b[1]);return c.filter(function(a){return!q.isDataUrl(a)})}function c(a,b,c,d){function e(a){return new RegExp("(url\\(['\"]?)("+q.escape(a)+")(['\"]?\\))","g")}return Promise.resolve(b).then(function(a){return c?q.resolveUrl(a,c):a}).then(d||q.getAndEncode).then(function(a){return q.dataAsUrl(a,q.mimeType(b))}).then(function(c){return a.replace(e(b),"$1"+c+"$3")})}function d(d,e,f){function g(){return!a(d)}return g()?Promise.resolve(d):Promise.resolve(d).then(b).then(function(a){var b=Promise.resolve(d);return a.forEach(function(a){b=b.then(function(b){return c(b,a,e,f)})}),b})}var e=/url\(['"]?([^'"]+?)['"]?\)/g;return{inlineAll:d,shouldProcess:a,impl:{readUrls:b,inline:c}}}function o(){function a(){return b(document).then(function(a){return Promise.all(a.map(function(a){return a.resolve()}))}).then(function(a){return a.join("\n")})}function b(){function a(a){return a.filter(function(a){return a.type===CSSRule.FONT_FACE_RULE}).filter(function(a){return r.shouldProcess(a.style.getPropertyValue("src"))})}function b(a){var b=[];return a.forEach(function(a){try{q.asArray(a.cssRules||[]).forEach(b.push.bind(b))}catch(c){console.log("Error while reading CSS rules from "+a.href,c.toString())}}),b}function c(a){return{resolve:function(){var b=(a.parentStyleSheet||{}).href;return r.inlineAll(a.cssText,b)},src:function(){return a.style.getPropertyValue("src")}}}return Promise.resolve(q.asArray(document.styleSheets)).then(b).then(a).then(function(a){return a.map(c)})}return{resolveAll:a,impl:{readAll:b}}}function p(){function a(a){function b(b){return q.isDataUrl(a.src)?Promise.resolve():Promise.resolve(a.src).then(b||q.getAndEncode).then(function(b){return q.dataAsUrl(b,q.mimeType(a.src))}).then(function(b){return new Promise(function(c,d){a.onload=c,a.onerror=d,a.src=b})})}return{inline:b}}function b(c){function d(a){var b=a.style.getPropertyValue("background");return b?r.inlineAll(b).then(function(b){a.style.setProperty("background",b,a.style.getPropertyPriority("background"))}).then(function(){return a}):Promise.resolve(a)}return c instanceof Element?d(c).then(function(){return c instanceof HTMLImageElement?a(c).inline():Promise.all(q.asArray(c.childNodes).map(function(a){return b(a)}))}):Promise.resolve(c)}return{inlineAll:b,impl:{newImage:a}}}var q=m(),r=n(),s=o(),t=p(),u={imagePlaceholder:void 0,cacheBust:!1},v={toSvg:b,toPng:d,toJpeg:e,toBlob:f,toPixelData:c,impl:{fontFaces:s,images:t,util:q,inliner:r,options:{}}};"undefined"!=typeof module?module.exports=v:a.domtoimage=v}(this);
+class language_support {
+	constructor(options={}, ...messages) {
+		this.options = Object.assign({
+			lang: 'en',
+			defaultlang: 'en',
+			supportedLanguages: []
+		}, options);
+		this.msgdata = {};
+		if (messages) {this.load(...messages);}
+	}
+	load(...messages) {
+		this.msgdata = Object.assign({}, ...messages);
+		this.determineSupportedLanguages();
+	}
+	merge(...messages) {
+		this.msgdata = Object.assign(this.msgdata, ...messages);
+		this.determineSupportedLanguages();
+	}
+	setLanguage(lang) {
+		if (this.options.supportedLanguages.includes(lang)) {
+			this.options.lang = lang;
+		}
+	}
+	getmsg(msgkey) {
+		if (this.msgdata[msgkey]?.[this.options.lang]) {return this.msgdata[msgkey][this.options.lang];}
+		if (this.msgdata[msgkey]?.[this.options.defaultlang]) {return this.msgdata[msgkey][this.options.defaultlang];}
+		return msgkey;
+	}
+	determineSupportedLanguages() {
+		this.options.supportedLanguages = [...new Set(Object.values(this.msgdata).flatMap(innerObj => Object.keys(innerObj)))];
+	}
+}
+
+//	Language Texts (to be updates from .md file)
+	function setupLanguageTextElements() {
+		return {
+			'noimgsel': {en: 'no picture files selected', de: 'Keine Bilder zum Laden ausgewählt'},
+			'zerowh': {en: 'Selection contains images with zero width or height', de: 'Auswahl enthält Bild mit Breite oder Höhe von Null'},
+			'imgloaderr': {en: 'Error loading image', de: 'Fehler beim Laden des Bildes'},
+			'posgenerr': {en: 'Poster generation failed', de: 'Postererstellung mit Fehler beendet'},
+			'wincreafail': {en: 'Error creating output window', de: 'Fehler beim Erzeugen des Ausgabefensters'},
+			'calcfail': {en: 'Calculation failed', de: 'Berechnung mit Fehler beendet'},
+			'colcounterr': {en: 'Illegal parameter column count', de: 'Unzulässiger Parameter bei Anzahl Spalten'},
+			'rowcounterr': {en: 'Illegal parameter row count', de: 'Unzulässiger Parameter bei Anzahl Zeilen'},
+			'illegalwha': {en: 'Illegal parameters for width, height or aspect', de: 'Unzulässige Parameter bei Einzelbild Breite, Höhe oder Seitenverhältnis'},
+			'pwiderr': {en: 'Invalid poster width', de: 'Unzulässige Poster-Breite'},
+			'pheighmiss': {en: 'Poster height, count of horizontal stripes or images per row are mandatory', de: 'Poster-Höhe, Anzahl horizontaler Streifen oder Bilder pro Zeile müssen angegeben werden'},
+			'invalidwhc': {en: 'Invalid parameters for width, height or count of stripes', de: 'Unzulässige Parameter bei Breite, Höhe oder Anzahl Streifen'},
+			'pheighterr': {en: 'Invalid poster height', de: 'Unzulässige Poster-Höhe'},
+			'pwidthmiss': {en: 'Poster width, count of vertical stripes or images per column are mandatory', de: 'Poster-Breite, Anzahl vertikaler Streifen oder Bilder pro Spalte müssen angegeben werden'},
+			'invalidhwc': {en: 'Invalid parameters for height, width or count of stripes', de: 'Unzulässige Parameter bei Höhe, Breite oder Anzahl Streifen'},
+			'postergen': {en: 'poster generated', de: 'Poster erzeugt'},
+			'calcdone': {en: 'calculation done', de: 'Berechnung erfolgt'},
+			'imgloaded': {en: 'images loaded', de: 'Bilder geladen'},
+			'imgmoveable': {en: 'The sequence of images can be changed by drag and drop', de: 'Die Reihenfolge der Bilder kann durch Verschieben geändert werden'},
+			'imgselected': {en: 'images selected', de: 'Bilder ausgewählt'},
+			'heicfail': {en: 'HEIC conversion failed', de: 'HEIC Konvertierung mit Fehler beendet'},
+			'h0': {en: 'Poster Generator', de: 'Poster Generator'},
+			'l_language': {en: 'Language', de: 'Sprache'},
+			'h1': {en: '1. Select Images', de: '1. Bilder auswählen'},
+			'j1': {en: 'Drag images here<br/>or click for file selection dialogue', de: 'Fotos hierhin ziehen<br/>oder klicken zum Dateiauswahldialog'},
+			'b1': {en: 'Delete Selection', de: 'Auswahl löschen'},
+			'a1': {en: 'Help', de: 'Hilfe'},
+			'h2': {en: '1. Load Images', de: '1. Bilder laden'},
+			'b2': {en: 'Load Images', de: 'Bilder laden'},
+			'b3': {en: 'Remove Images', de: 'Bilder löschen'},
+			'h3': {en: '2. Select Poster Type', de: '2. Poster-Typ festlegen'},
+			'pt1': {en: 'Grid', de: 'Raster'},
+			'pt2': {en: 'Stripes horizontal', de: 'Streifen horizontal'},
+			'pt3': {en: 'Stripes vertical', de: 'Streifen vertikal'},
+			'h4': {en: '3. Select Output Format', de: '3. Ausgabeformat festlegen'},
+			'ot1': {en: 'Canvas', de: 'Canvas'},
+			'ot2': {en: 'HTML', de: 'HTML'},
+			'h5': {en: '4. Poster Parameters', de: '4. Poster Parameter'},
+			'l_colcount1': {en: 'Column count', de: 'Anzahl Spalten'},
+			'l_rowcount1': {en: 'Row count', de: 'Anzahl Zeilen'},
+			'l_singleWidth1': {en: 'Width of single image', de: 'Einzelbild Breite'},
+			'l_singleHeight1': {en: 'Height of single image', de: 'Einzelbild Höhe'},
+			'l_aspect1': {en: 'Aspect ratio (W:H)', de: 'Seitenverhältnis (B:H)'},
+			'l_crop1': {en: 'Crop options:', de: 'Zuschnitt:'},
+			'l_fit11': {en: 'contain (margins may occur)', de: 'Originalverhältnis (ggf. mit Rand)'},
+			'l_fit12': {en: 'fill (distortions possible)', de: 'Ausfüllen (ggf. mit Verzerrung)'},
+			'l_fit13': {en: 'cover (centered)', de: 'Ausschnitt (mittenzentriert)'},
+			'l_targetWidth2': {en: 'Specified poster width', de: 'Vorgegebene Poster-Breite'},
+			'l_targetHeight2': {en: 'Desired poster height (approx.)', de: 'Gewünschte Poster-Höhe (ca.)'},
+			'l_rowcount2': {en: 'Count of horizontal stripes', de: 'Anzahl horizontaler Streifen'},
+			'l_rowgrid2': {en: 'Images per row (n1, n2, ... nn or n * m)', de: 'Bilder pro Zeile (n1, n2, ... nn oder n * m)'},
+			'l_targetHeight3': {en: 'Specified poster height', de: 'Vorgegebene Poster-Höhe'},
+			'l_targetWidth3': {en: 'Desired poster width (approx.)', de: 'Gewünschte Poster-Breite (ca.)'},
+			'l_colcount3': {en: 'Count of vertical stripes', de: 'Anzahl vertikaler Streifen'},
+			'l_colgrid3': {en: 'Images per column (n1, n2, ... nn or n * m', de: 'Bilder pro Spalte (n1, n2, ... nn)'},
+			'l_margins': {en: 'Margins (t, r, b, l)', de: 'Posterränder (o, r, u, l)'},
+			'l_gaps': {en: 'Gap (hor., vert.)', de: 'Bildzwischenraum (hor., vert.)'},
+			'l_bgcol': {en: 'Background color', de: 'Hintergrundfarbe'},
+			'l_bgimg': {en: 'Background image', de: 'Hintergrundbild'},
+			'l_imcap': {en: 'Image captions', de: 'Bildtitel'},
+			'l_singleimage': {en: 'Single image:', de: 'Einzelbild:'},
+			'l_borderwidth': {en: 'Border width', de: 'Rahmenstärke'},
+			'l_borderdash': {en: 'Border style', de: 'Rahmenmuster'},
+			'borderstyle1': {en: 'none', de: 'kein Rahmen'},
+			'borderstyle2': {en: 'solid', de: 'Linie'},
+			'borderstyle3': {en: 'dotted', de: 'Punkte'},
+			'borderstyle4': {en: 'dashed', de: 'gestrichelt'},
+			'borderstyle5': {en: 'double', de: 'Doppellinie'},
+			'borderstyle6': {en: 'groove', de: 'Rille'},
+			'borderstyle7': {en: 'ridge', de: 'Steg'},
+			'borderstyle8': {en: 'inset', de: 'eingebettet'},
+			'borderstyle9': {en: 'outset', de: 'aufgesetzt'},
+			'l_borderstyle': {en: 'Border style', de: 'Rahmenstil'},
+			'l_bordercolor': {en: 'Border color', de: 'Rahmenfarbe'},
+			'l_corner': {en: 'Border radius', de: 'Eckenrundung'},
+			'l_postername': {en: 'Poster Name', de: 'Postername'},
+			'l_filetype': {en: 'Image file type', de: 'Ausgabedateityp'},
+			'l_quality': {en: 'Quality (jpeg)', de: 'Ausgabequalität (jpeg)'},
+			'h6': {en: '5. Generate Poster', de: '5. Poster erstellen'},
+			'pw2': {en: 'Show Poster', de: 'Poster anzeigen'},
+			'pw3': {en: 'Save Poster', de: 'Poster speichern'},
+			'j81': {en: 'Drag background image here<br/>or click for file selection dialogue', de: 'Hintergrundbild hierhin ziehen<br/>oder klicken zum Dateiauswahldialog'},
+			'bgimgtransform1': {en: 'no transform', de: 'keine Anpassung'},
+			'bgimgtransform2': {en: 'fill (distortions possible)', de: 'Ausfüllen (ggf. mit Verzerrung)'},
+			'bgimgtransform3': {en: 'proportional (no distorsion)', de: 'Proportional (ohne Verzerrung)'},
+			'l_bgimgtransform': {en: 'Image transformation', de: 'Bildanpassung'},
+			'l_bgimgpos': {en: 'Positioning (LCR, TCB)', de: 'Positionierung (LMR, OMU)'},
+			'l_bgimgopacity': {en: 'Opacity (0: transparent, 1: no see-through)', de: 'Opazität (0: transparent, 1: undurchsichtig)'},
+			'titlefontfamily0': {en: 'select font family', de: 'Font auswählen'},
+			'l_titlefontfamily': {en: 'Font Family', de: 'Schriftart'},
+			'l_titlefontsize': {en: 'Font size (px)', de: 'Schriftgröße (px)'},
+			'l_titlecolor': {en: 'Color', de: 'Schriftfarbe'},
+			'l_titlecolorstroke': {en: 'Stroke color', de: 'Schriftkantenfarbe'},
+			'l_titlestrokewidth': {en: 'Stroke width', de: 'Schriftkantenstärke'},
+			'l_titlepos': {en: 'Positioning of image titles', de: 'Positionierung Bildtitel'},
+			'l_titletextanchor': {en: 'Text anchor (L/C/R T/C/B)', de: 'Textanker (L/M/R O/M/U)'},
+			'l_titleimageanchor': {en: 'Image anchor (L/C/R T/C/B)', de: 'Bildanker (L/M/R O/M/U)'},
+			'l_titledistances': {en: 'Offsets (hor. px, vert. px)', de: 'Abstände (hor. px, vert. px)'},
+			'l_titleangle': {en: 'Text Angle (degrees)', de: 'Textwinkel (°)'},
+			'fontmodedefault': {en: 'Default fonts', de: 'Standard Fonts'},
+			'fontmodeall': {en: 'All system fonts', de: 'Alle Fonts'},
+			'l_titleusefilename': {en: 'Use filename as caption', de: 'Dateiname als Bildtitel'},
+			'nothingtodownload': {en: 'nothing to download', de: 'Kein Poster zum Download verfügbar'}
+		};
+	}

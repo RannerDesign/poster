@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<!-- program_version = '3.1.6' -->
+<!-- program_date = '2026-07-27' -->
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="icon" type="image/png" href="poster.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image-more/3.7.1/dom-to-image-more.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/heic-to@1.2.2/dist/iife/heic-to.js"></script>
+<script src="https://unpkg.com/exifreader@4.16.0/dist/exif-reader.js"></script>
+<script src="poster.js"></script>
+<title>Poster Generator</title>
+<style type='text/css'>
+	:root {
+		--bg: #f5f7fb;
+		--panel: #ffffff;
+		--panel-soft: #f8fafc;
+		--text: #1f2937;
+		--muted: #6b7280;
+		--line: #dbe3ee;
+		--accent: #2563eb;
+		--accent-hover: #1d4ed8;
+		--accent-soft: #eff6ff;
+		--danger: #b91c1c;
+		--radius: 14px;
+		--shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+	}
+
+	*, *::before, *::after {
+		box-sizing: border-box;
+	}
+
+	body {
+		margin: 0;
+		font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+		background: var(--bg);
+		color: var(--text);
+		line-height: 1.5;
+	}
+
+	body > div {
+		max-width: 960px;
+		margin: 16px auto;
+		padding: 16px;
+		background: var(--panel);
+		border: 1px solid var(--line);
+		border-radius: 20px;
+		box-shadow: var(--shadow);
+	}
+
+	h2 {
+		margin: 0 0 20px;
+		text-align: left;
+		font-size: 2rem;
+		letter-spacing: -0.02em;
+	}
+
+	h4 {
+		margin: 28px 0 12px;
+		font-size: 1rem;
+		font-weight: 700;
+		color: var(--muted);
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+	}
+
+	.right {text-align: right;}
+	.center {text-align: center;}
+	.bold {font-weight: bold;}
+	.container {
+		position: relative;
+	}
+
+	.topright {
+		position: absolute; top: 5px; right: 5px;
+		display: flex; flex-wrap: wrap; align-items: center;
+		gap: 12px;
+	}
+
+	.topright select {
+		width: 50px;
+		min-height: 32px;
+		padding: 5px;
+		font-size: 0.95rem;
+		border: 1px solid var(--line);
+		border-radius: 10px;
+		background: #fff;
+		color: var(--text);
+	}
+
+	.flexblocks {
+		margin: 12px 0 20px;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 12px;
+	}
+
+	button, .helpbutton, .buttonlink {
+		appearance: none;
+		border: 1px solid var(--line);
+		border-radius: 12px;
+		min-height: 48px;
+		padding: 0 18px;
+		font-size: 0.95rem;
+		font-weight: 600;
+		color: var(--text);
+		background: var(--panel-soft);
+		transition: all 0.18s ease;
+		cursor: pointer;
+		text-decoration: none;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	button:hover, .helpbutton:hover {
+		background: var(--accent);
+		border-color: var(--accent);
+		color: #fff;
+		transform: translateY(-1px);
+	}
+
+	button:disabled {
+		opacity: 0.45;
+		cursor: not-allowed;
+		transform: none;
+	}
+
+	.uploadfilearea {
+		position: relative;
+		width: min(100%, 360px);
+		min-height: 84px;
+		padding: 16px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		text-align: center;
+		border: 2px dashed #b7c4d6;
+		border-radius: 16px;
+		background: #fbfdff;
+	}
+
+	.uploadfilearea:hover {
+		border-color: var(--accent);
+		background: var(--accent-soft);
+	}
+
+	.droparea label {
+		display: block;
+		color: var(--accent);
+		font-size: 0.95rem;
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	.waiticon {
+		width: 16px; height: 16px; border-radius: 16px;
+	}
+
+	.counter {
+		min-width: 32px;
+		min-height: 32px;
+		padding: 4px 10px;
+		border-radius: 999px;
+		background: var(--accent-soft);
+		color: var(--accent);
+		font-weight: 700;
+		text-align: center;
+	}
+
+	.optarea {
+		margin: 8px 0;
+		padding: 8px;
+		background: var(--panel-soft);
+		border: 1px solid var(--line);
+		border-radius: 16px;
+	}
+		
+	.optarea h4 {
+		margin: 0;
+	}
+
+	.grid2 {
+		display: grid;
+		grid-template-columns: 160px minmax(260px, 1fr);
+		gap: 3px 15px;
+		margin: 8px 0;
+		padding: 8px;
+		background: var(--panel-soft);
+		border: 1px solid var(--line);
+		border-radius: 16px;
+	}
+
+	.grid2 > label, .grid2 > div {
+		align-self: center;
+	}
+
+	.grid2 input, .grid2 select {
+		width: 100%;
+		min-height: 24px;
+		padding: 5px;
+		font-size: 0.95rem;
+		border: 1px solid var(--line);
+		border-radius: 10px;
+		background: #fff;
+		color: var(--text);
+	}
+
+	.grid2 input:focus, .grid2 select:focus, button:focus, .helpbutton:focus {
+		outline: 3px solid rgba(37, 99, 235, 0.18);
+		outline-offset: 2px;
+	}
+
+	.grid2 input[type="text"] {
+		text-align: right;
+	}
+
+	.togglefont {
+		margin-left: 20px;
+		padding: 0 7px;
+		border: 1px dashed #7f7f7f7f;
+		border-radius: 7px;
+	}
+
+	.bgthumb {}
+
+	.bgthumb img {
+		max-width: 180px;
+		max-height: 120px;
+	}
+
+	.bgmeta {
+		font-family: ui-monospace, Menlo, Monaco, Consolas, "Lucida Console", "Courier New", monospace;
+		font-size: 12px;
+	}
+
+	.messagearea {
+		margin-top: 24px;
+		padding: 12px 14px;
+		background: #f8fafc;
+		border: 1px solid var(--line);
+		border-radius: 12px;
+		font-size: 0.92rem;
+		color: var(--muted);
+	}
+
+	.fileblock {
+		position: relative; display: grid;
+		grid-template-columns: 54px 180px 400px 54px;
+		grid-template-rows: 48px 24px 24px 24px 24px;
+		grid-template-areas: 
+		"number thumb filename fileremove"
+		"number thumb filetitle fileremove"
+		"number thumb fileTS fileremove"
+		"number thumb filesize fileremove"
+		"number thumb filepixel fileremove";
+		width: 634px; height: 144px; margin: 5px 0; background-color: #efefef
+	}
+
+	.filenumber {grid-area: number; align-self: center; max-height: 110px; padding: 5px; font-size: 24px; color: #1f1f7f; text-align: right;}
+	.fileimg {grid-area: thumb; justify-self: center; align-self: center; max-height: 144px; max-width: 170px; padding: 5px;}
+	.filename {grid-area: filename; padding-top: 10px; font-size: 16px; color: #1f1f7f;}
+	.filetitle {grid-area: filetitle; padding-top: 10px; font-size: 12px; color: #1f1f7f;}
+	.fileTS {grid-area: fileTS; padding-top: 15px; font-size: 12px; color: #3f1f1f;}
+	.filesize {grid-area: filesize; padding-top: 10px; font-size: 12px; color: #1f3f1f;}
+	.filepixel {grid-area: filepixel; padding-top: 5px; font-size: 12px; color: #1f3f1f;}
+	.fileremove {grid-area: fileremove; justify-self: center; align-self: center;}
+	.fileremove > img {width: 40px; height: 40px;}
+	.filetitle input {
+		width: 90%;
+		border: none;
+		background-color: #fefefe;
+	}
+	.filetitle input:focus {
+		border-radius: 5px;
+		outline: 3px solid rgba(37, 99, 235, 0.18);
+		outline-offset: 2px;
+	}
+
+	.programversion {
+		margin-top: 18px;
+		padding-top: 12px;
+		border-top: 1px solid var(--line);
+		text-align: right;
+		font-size: 0.8rem;
+		color: var(--muted);
+	}
+
+	.msgerr {
+		color: var(--danger);
+	}
+</style>
+</head
+<body>
+</body>
+</html>
